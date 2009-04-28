@@ -1,0 +1,262 @@
+LDA:
+imm A9
+zpage A5
+zpagex B5
+abs AD
+absx BD
+absy B9
+indx A1
+indy B1
+
+STA:
+zpage 85
+zpagex 95
+abs 8D
+absx 9D
+absy 99
+indx 81
+indy 91
+
+LDX:
+imm a2
+zpage a6
+abs ae
+absy be
+zpagey b6
+
+STX:
+zpage 86
+abs 8e
+zpagey 96
+
+LDY:
+imm a0
+zpage a4
+zpagex b4
+abs ac
+absx bc
+
+STY:
+zpage 84
+zpagex 94
+abs 8c
+
+AND:
+imm 29
+zpage 25
+zpagex 35
+abs 2D
+absx 3d
+absy 39
+indx 21
+indy 31
+
+ORA:
+imm 09
+zpage 05
+zpagex 15
+abs 0d
+absx 1d
+absy 19
+indx 01
+indy 11
+
+EOR:
+imm 49
+zpage 45
+zpagex 55
+abs 4d
+absx 5d
+absy 59
+indx 41
+indy 51
+
+BIT:
+zpage 24
+abs 2c
+
+CMP:
+imm c9
+zpage c5
+zpagex D5
+abs cd
+absx dd
+absy d9
+indx c1
+indy d1
+
+CPX:
+imm e0
+zpage e4
+abs ec
+
+CPY:
+imm c0
+zpage c4
+abs cc
+
+ADC:
+imm 69
+zpage 65
+zpagex 75
+abs 6d
+absx 7d
+absy 79
+indx 61
+indy 71
+
+SBC:
+imm e9
+zpage e5
+zpagex f5
+abs ed
+absx fd
+absy f9
+indx e1
+indy f1
+
+ASL:
+accum 0a
+zpage 06
+zpagex 16
+abs 0e
+absx 1e
+
+LSR:
+accum 4a
+zpage 46
+zpagex 56
+abs 4e
+absx 5e
+
+ROL:
+accum 2a
+zpage 26
+zpagex 36
+abs 2e
+absx 3e
+
+ROR:
+accum 6a
+zpage 66
+zpagex 76
+abs 6e
+absx 7e
+
+INC:
+zpage e6
+zpagex f6
+abs ee
+absx fe
+
+DEC:
+zpage c6
+zpagex d6
+abs ce
+absx de
+
+JMP:
+abs 4c
+ind 6c
+
+JSR:
+abs 20
+
+BRK:
+imp 00
+
+RTS:
+imp 60
+
+RTI:
+imp 40
+
+PHP:
+imp 08
+
+PLP:
+imp 28
+
+PHA:
+imp 48
+
+PLA:
+imp 68
+
+INX:
+imp e8
+
+DEX:
+imp ca
+
+INY:
+imp c8
+
+DEY:
+imp 88
+
+TAX:
+imp AA
+
+TXA:
+imp 8a
+
+TAY:
+imp a8
+
+TYA:
+imp 98
+
+TSX:
+imp BA
+
+TXS:
+imp 9A
+
+SED:
+imp f8
+
+CLD:
+imp d8
+
+SEI:
+imp 78
+
+CLI:
+imp 58
+
+SEC:
+imp 38
+
+CLC:
+imp 18
+
+CLV:
+imp B8
+
+BEQ:
+rel f0
+
+BNE:
+rel d0
+
+BMI:
+rel 30
+
+BPL:
+rel 10
+
+BCC:
+rel 90
+
+BCS:
+rel B0
+
+BVC:
+rel 50
+
+BVS:
+rel 70
+
+NOP:
+imp EA
