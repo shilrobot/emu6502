@@ -66,20 +66,24 @@ n=0
 for i in encodings:
 	if i is None:
 		s1 += 'null, '
-		n+=1
 	else:
 		s1 += '"%s", '%i.name	
-		n+=1
+	n+=1
 	if n == 8:
 		s1 += '\n'
 		n=0
 	
 s2 = '\n'
+n=0
 for i in encodings:
 	if i is None:
-		s2 += 'AddressMode.Implied,\n'
-		continue
-	s2+= 'AddressMode.%s,\n'%(modeHelpers2[i.modename])
+		s2 += 'AddressMode.Implied, '
+	else:
+		s2+= 'AddressMode.%s, '%(modeHelpers2[i.modename])
+	n += 1
+	if n == 4:
+		s1 += '\n'
+		n=0
 		
 
 	

@@ -44,6 +44,7 @@ namespace Emu6502
                 data.Add(value);
             }
 
+            /*
             Disassembler disasm = new Disassembler(0, data.ToArray());
             try
             {
@@ -54,7 +55,9 @@ namespace Emu6502
                 outputBox.Text = ex.Message;
                 return;
             }
-            outputBox.Text = disasm.Result;
+             * */
+
+            outputBox.Text = Disassembler.Disassemble(data.ToArray(), 0);
         }
 
     }
