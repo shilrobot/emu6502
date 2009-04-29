@@ -1,13 +1,17 @@
 
 
+import re
 
-class Instr:
-	def __init__(self, name):
+
+class InstrEncoding:
+	def __init__(self, opcode, name, modename):
+		self.opcode = opcode
 		self.name = name
-		self.modes = {} # Should be a mapping of modename -> [bytecode], later might have cycle count or other info
+		self.modename = modename
 		
-instrs = []		
-currInstr = None
+currInstrName = None
+
+encodings = [None]*256
 
 f = open("opcodetab.txt", "rt")
 for line in f.readlines():
@@ -17,16 +21,14 @@ for line in f.readlines():
 	if line.startswith('#'):
 		continue
 	if line.endswith(':'):
-		if currInstr is not None:
-			instrs.append(currInstr)
-		currInstr = Instr(line[:-1])
+		currInstrName = line[:-1]
 	else:
 		parts = line.split()
-		currInstr.modes[parts[0]] = parts[1:]
+		#currInstr.modes[parts[0]] = parts[1:]
+		modename = parts[0]
+		opcode = int(parts[1],16)
+		encodings[opcode] = InstrEncoding(opcode, currInstrName, modename)
 f.close()
-
-if currInstr is not None:
-	instrs.append(currInstr)
 	
 #for i in instrs:
 #	print i.name, i.modes
@@ -44,26 +46,70 @@ modeHelpers = {'imm':'Immediate()',
 				'indy':'IndirectIndexedY()',
 				'imp':'""',
 				'rel':'Relative()'}
-								
+							
+modeHelpers2 = {'imm':'Immediate',
+				'zpage':'ZeroPage',
+				'zpagex':'ZeroPageIndexedX',
+				'zpagey':'ZeroPageIndexedY',
+				'accum':'Accumulator',
+				'abs':'Absolute',
+				'absx':'AbsoluteIndexedX',
+				'absy':'AbsoluteIndexedY',
+				'ind':'Indirect',
+				'indx':'IndexedIndirectX',
+				'indy':'IndirectIndexedY',
+				'imp':'Implied',
+				'rel':'Relative'}
+				
+s1 = '\n'
+n=0
+for i in encodings:
+	if i is None:
+		s1 += 'null, '
+		n+=1
+	else:
+		s1 += '"%s", '%i.name	
+		n+=1
+	if n == 8:
+		s1 += '\n'
+		n=0
+	
+s2 = '\n'
+for i in encodings:
+	if i is None:
+		s2 += 'AddressMode.Implied,\n'
+		continue
+	s2+= 'AddressMode.%s,\n'%(modeHelpers2[i.modename])
+		
 
-s = ''
-for i in instrs:
-	for modename,parms in i.modes.items():
-		#print i.name,modename,parms
-		opcode = parms[0].upper()
-		modeHelper = modeHelpers[modename]
-		s += '    '*4
-		s += 'case 0x%s: name=\"%s\"; operand=%s; break;' % (opcode, i.name.upper(), modeHelper)
-		s += '\n'
+	
+if 0:				
+	s = ''
+	for i in instrs:
+		for modename,parms in i.modes.items():
+			#print i.name,modename,parms
+			opcode = parms[0].upper()
+			modeHelper = modeHelpers[modename]
+			s += '    '*4
+			s += 'case 0x%s: name=\"%s\"; operand=%s; break;' % (opcode, i.name.upper(), modeHelper)
+			s += '\n'
 #print s
+
+def replaceRegion(s, regionName, contents):
+	startPlain = "/* BEGIN %s */" % regionName
+	endPlain = "/* END %s */" % regionName
+	start = re.escape(startPlain)
+	end = re.escape(endPlain)
+	regex = re.compile(start + "(.*?)" + end, re.IGNORECASE | re.DOTALL)
+	return regex.sub(startPlain+contents+endPlain, s)
 
 fsrc = open("Disasm.cs","r")
 fileContents = fsrc.read()
 fsrc.close()
-import re
-regex = re.compile(r"/\* BEGIN GENERATED \*/(.*?)/\* END GENERATED \*/", re.M | re.DOTALL)
-fileContents = regex.sub('/* BEGIN GENERATED */\n'+s+'            /* END GENERATED */', fileContents)
-print fileContents
+fileContents = replaceRegion(fileContents, "OPNAMES", s1)
+fileContents = replaceRegion(fileContents, "MODES", s2)
+#fileContents = replaceRegion(fileContents, "GENERATED", '\n'+s+'            ')
+#print fileContents
 
 fdest = open("Disasm.cs","wt")
 fdest.write(fileContents)
