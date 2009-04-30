@@ -7,7 +7,10 @@ namespace Emu6502
 {
     public partial class Chip6502
     {
-        public const byte SignBit = 0x80;
+        // Locations of interrupt vectors in memory
+        public const ushort NMIAddr     = 0xFFFA;
+        public const ushort ResetAddr   = 0xFFFC;
+        public const ushort IRQAddr     = 0xFFFE;
 
         public byte A; // Accumulator
         public byte X; // X registr
@@ -15,6 +18,9 @@ namespace Emu6502
         public ushort PC; // Current instruction address
 
         // Status flags
+        // Note: D (BCD arithmetic flag) is not implemented by NES
+        // Likewise, B is not a real flag, but rather only shows up as 1 in the saved
+        // status register on the stack after BRK causes an interrupt.
         public bool C, Z, I, V, N;
 
         public byte SP; // Stack pointer
@@ -26,11 +32,18 @@ namespace Emu6502
             Reset();
         }
 
+        public void DumpRegs()
+        {
+            Console.WriteLine("PC={0:X4} SP={1:X2} A={2:X2} X={3:X2} Y={4:x2} C={5} Z={6} I={7} V={8} N={9}",
+                PC, SP, A, X, Y, C ? 1 : 0, Z ? 1 : 0, I ? 1 : 0, V ? 1 : 0, N ? 1 : 0);
+        }
+
         public void Reset()
         {
+            Console.WriteLine("6502 Reset");
             A = X = Y = 0;
             // Load PC from reset vector
-            PC = ReadWord(0xFFFC);
+            PC = ReadWord(ResetAddr);
             // Z flag apparently is set after reset
             C = I = V = N = false;
             Z = true;
@@ -40,21 +53,23 @@ namespace Emu6502
         // In practice this is connected to the vertical retrace from the PPU
         public void NMI()
         {
+            Console.WriteLine("6502 NMI");
             PushWord(PC);
             PushStatus(false);
             I = true;
-            PC = ReadWord(0xFFFA);
+            PC = ReadWord(NMIAddr);
         }
 
-        public bool IRQ()
+        public void IRQ()
         {
-            if (I)
-                return false;
-            PushWord(PC);
-            PushStatus(false);
-            I = true;
-            PC = ReadWord(0xFFFE);
-            return true;
+            Console.WriteLine("6502 IRQ");
+            if (!I)
+            {
+                PushWord(PC);
+                PushStatus(false);
+                I = true;
+                PC = ReadWord(IRQAddr);
+            }
         }
 
         private byte Read(int addr)
@@ -79,8 +94,8 @@ namespace Emu6502
 
         private void PushWord(ushort val)
         {
-            Push((byte)((val & 0xFF00) >> 8));
-            Push((byte)(val & 0xFF));
+            Push((byte)(val >> 8));
+            Push((byte)val);
         }
 
         private ushort PullWord()
@@ -118,8 +133,6 @@ namespace Emu6502
             C = (status & 0x01) != 0;
         }
 
-
         // TODO: Cycle-accurate counters, etc.
-
     }
 }

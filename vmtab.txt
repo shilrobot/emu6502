@@ -85,7 +85,7 @@ SETNZ;
 
 ASL {{
 READ;
-C = (data & SignBit)!=0;
+C = (data & 0x80)!=0;
 data <<= 1;
 WRITE;
 SETNZ;
@@ -93,7 +93,7 @@ SETNZ;
 
 LSR {{
 READ;
-C = (data & 0x1)!=0;
+C = (data & 0x01)!=0;
 data >>= 1;
 WRITE;
 SETNZ;
@@ -102,7 +102,7 @@ SETNZ;
 ROL {{
 READ;
 bool oldC = C;
-C = (data & SignBit)!=0;
+C = (data & 0x80)!=0;
 data <<= 1;
 if(oldC) data |= 1;
 WRITE;
@@ -112,7 +112,7 @@ SETNZ;
 ROR {{
 READ;
 bool oldC = C;
-C = (data & 0x1)!=0;
+C = (data & 0x01)!=0;
 data >>= 1;
 if(oldC) data |= 0x80;
 WRITE;
@@ -146,12 +146,13 @@ NPC = addr;
 BRK {{
 // 2nd byte after BRK is skipped
 NPC++;
-// This is essentially the same as IRQ
+// This is essentially the same as IRQ, except we set the B flag in
+// the saved status register copy on-stack.
 if(!I) {
 	PushWord(NPC);
 	PushStatus(true);
 	I = true;
-	NPC = ReadWord(0xFFFE);
+	NPC = ReadWord(IRQAddr);
 }
 }}
 
@@ -164,6 +165,7 @@ PullStatus();
 NPC = PullWord();
 }}
 
+// TODO: Does PHP push the B flag as well? Some 6502's do...
 PHP {{
 PushStatus(false);
 }}

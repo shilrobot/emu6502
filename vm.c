@@ -6,17 +6,26 @@
 	 
 #define AGEN_IMM	
 #define AGEN_ZP		addr = LO;
-#define AGEN_ZPX	addr = (ushort)((LO+X)&0xFF);
-#define AGEN_ZPY	addr = (ushort)((LO+Y)&0xFF);
+#define AGEN_ZPX	addr = (ushort)((LO+X)&0xFF);	// Zero page wraps around
+#define AGEN_ZPY	addr = (ushort)((LO+Y)&0xFF);	// Zero page wraps around
 #define AGEN_A
 #define AGEN_ABS	addr = HILO;
 #define AGEN_ABSX	addr = (ushort)(HILO+X);
 #define AGEN_ABSY	addr = (ushort)(HILO+Y);
-#define AGEN_IND	addr = ReadWord(HILO);
+// Only used for jump indirect -- simulate JMP INDIRECT page wraparound "bug"
+#define AGEN_IND	{  \
+						ushort addr1 = HILO; \
+						byte addr2_lo = Read(addr1); \
+						addr1 = (ushort)((addr1 & 0xFF00) | ((addr1+1)&0xFF)); \
+						byte addr2_hi = Read(addr1); \
+						addr = (ushort)(addr2_lo | (addr2_hi<<8)); \
+					}
 #define AGEN_INDX	addr = ReadWord((LO+X) & 0xFFFF);
 #define AGEN_INDY	addr = (ushort)(ReadWord(LO)+Y);
 #define AGEN_IMPL
 #define AGEN_REL
+
+// TODO: For indirect, the next byte is wraps around to beginning of page! :(
 
 #define READ_IMM 	data = LO;
 #define READ_ZP 	data = Read(addr);
@@ -40,7 +49,7 @@
 #define WRITE_ABS 	Write(addr, data);
 #define WRITE_ABSX	Write(addr, data);
 #define WRITE_ABSY	Write(addr, data);
-#define WRITE_IND	Write(addr, data);
+#define WRITE_IND	
 #define WRITE_INDX	Write(addr, data);
 #define WRITE_INDY	Write(addr, data);
 #define WRITE_IMPL

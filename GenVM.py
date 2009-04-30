@@ -61,6 +61,7 @@ for i in encodings:
 	s += '// %s (%s)\n' % (i.name, i.modename)
 	s += 'case 0x%02X:\n' % i.opcode
 	s += '{\n'
+	#s += 'Console.WriteLine("%s %s");\n' % (i.name, i.modename)
 	s += 'NPC = (ushort)(PC+%d);\n' % modeSizes[i.modename]
 	s += 'AGEN\n'
 	s += code+'\n'
