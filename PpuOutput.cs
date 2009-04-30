@@ -19,6 +19,11 @@ namespace Emu6502
             this.ppu = ppu;
         }
 
+        private Bitmap GetPattern(int num)
+        {
+
+        }
+
         private void PpuOutput_Paint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
@@ -30,7 +35,6 @@ namespace Emu6502
             int addr = 0x0000;
             while (addr < 0x2000)
             {
-
                 for (int y = 0; y < 8; ++y)
                     for (int x = 0; x < 8; ++x)
                     {
