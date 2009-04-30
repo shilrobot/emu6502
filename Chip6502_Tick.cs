@@ -1238,7 +1238,13 @@ break;
 /* END SWITCH */
                 default:
                     NPC = (ushort)(PC + 1);
-                    Console.WriteLine("Invalid Opcode ${0:X2} @ ${1:X4}: treating as NOP", opcode, PC);
+                    if (ignoreOpcodes < 10)
+                    {
+                        Console.WriteLine("Invalid Opcode ${0:X2} @ ${1:X4}: treating as NOP", opcode, PC);
+                        ++ignoreOpcodes;
+                        if (ignoreOpcodes == 10)
+                            Console.WriteLine("Suppressing further invalid opcode messages");
+                    }
                     break;
             }
 

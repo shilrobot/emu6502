@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
+using System.IO;
 
 namespace Emu6502
 {
@@ -20,20 +21,26 @@ namespace Emu6502
 
             /*Rom r = new Rom("Roms/Mega Man 2 (U).nes");
             Rom r2 = new Rom("Roms/Castlevania (E).nes");*/
-            Rom r3 = new Rom("Roms/Super Mario Bros. (E).nes");
-            NesMemory mem = new NesMemory(r3);
-            Chip6502 cpu = new Chip6502(mem);
+
+            Nes nes = new Nes("Roms/Super Mario Bros. (E).nes");
 
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             sw.Start();
-            int max = 10000000;
+            int max = 500000;
             for(int n=0; n<max; ++n)
             {
-                cpu.Tick();
+                /*w.WriteLine(String.Format("Time = {0:0.000} sec", n / (double)Nes.PpuTicksPerSecond));
+                w.WriteLine(nes.Cpu.DumpRegs());
+                w.Write(Disassembler.Disassemble(nes.Mem, nes.Cpu.PC, 8));
+                w.Write("-");*/
+                nes.Tick();
             }
             sw.Stop();
             double secs = (double)sw.ElapsedTicks / (double)System.Diagnostics.Stopwatch.Frequency;
-            Console.WriteLine("Speed: {0:0.00} MHz", (max / secs) / 1.0e6);
+            Console.WriteLine("PPU Speed: {0:0.00} MHz", (max / secs) / 1.0e6);
+
+            Application.Run(new Debugger(nes));
+
             return;
         }
     }

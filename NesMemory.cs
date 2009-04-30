@@ -8,12 +8,20 @@ namespace Emu6502
     // TODO: Separate mapper system
     public class NesMemory : IMemory
     {
-        private byte[] RAM = new byte[2048];
+        private byte[] RAM;
+        private Nes nes;
         private Rom rom;
 
-        public NesMemory(Rom rom)
+        public NesMemory(Nes nes)
         {
-            this.rom = rom;
+            this.nes = nes;
+            this.rom = nes.Rom;
+            
+        }
+
+        public void Reset()
+        {
+            RAM = new byte[2048];
         }
 
         public byte Read(int addr)
@@ -32,12 +40,30 @@ namespace Emu6502
             else if (addr < 0x4000)
             {
                 addr = 0x2000 | (addr & 0x7);
-                //Console.WriteLine("R IO ${0:X4}", addr);
-                return 0;
+
+                byte b;
+                switch (addr)
+                {
+                    case 0x2002:
+                        b = nes.Ppu.ReadPpuStatus();
+                        break;
+                    case 0x2003:
+                        b = nes.Ppu.ReadOAMData();
+                        break;
+                    case 0x2007:
+                        b = nes.Ppu.ReadPpuData();
+                        break;
+                    default:
+                        b = 0x0;
+                        break;
+                }
+
+                //Console.WriteLine("R IO ${0:X4} = ${1:X2}", addr, b);
+                return b;
             }
             else if (addr < 0x4020)
             {
-                //Console.WriteLine("R IO ${0:X4}", addr);
+                Console.WriteLine("R IO ${0:X4}", addr);
                 return 0;
             }
             else if (addr < 0x6000)
@@ -87,12 +113,49 @@ namespace Emu6502
             else if (addr < 0x4000)
             {
                 addr = 0x2000 | (addr & 0x7);
+
                 //Console.WriteLine("W IO ${0:X4} = ${1:X2}", addr, val);
-                // TODO
+                switch (addr)
+                {
+                    case 0x2000:
+                        nes.Ppu.WritePpuCtrl(val);
+                        break;
+                    case 0x2001:
+                        nes.Ppu.WritePpuMask(val);
+                        break;
+                    case 0x2003:
+                        nes.Ppu.WriteOAMAddr(val);
+                        break;
+                    case 0x2005:
+                        nes.Ppu.WritePpuScroll(val);
+                        break;
+                    case 0x2006:
+                        nes.Ppu.WritePpuAddr(val);
+                        break;
+                    case 0x2007:
+                        nes.Ppu.WritePpuData(val);
+                        break;
+                    default:
+                        break;
+                }
             }
             else if (addr < 0x4020)
             {
-                //Console.WriteLine("W IO ${0:X4} = ${1:X2}", addr, val);
+                Console.WriteLine("W IO ${0:X4} = ${1:X2}", addr, val);
+
+                // Fake DMA
+                if (addr == 0x4014)
+                {
+                    ushort srcAddr = (ushort)(val * 0x100);
+                    Console.WriteLine("DMAing ${0:X4} to OAM memory", srcAddr);
+                    // TODO: LOL, potential explosion
+                    for (int i = 0; i < 256; ++i)
+                    {
+                        byte b = Read(srcAddr + i);
+                        nes.Ppu.SpriteMem[i] = b;
+                    }
+                }
+
                 // TODO
             }
             else if (addr < 0x6000)

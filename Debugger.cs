@@ -13,11 +13,10 @@ namespace Emu6502
     {
         private Nes nes;
 
-        public Debugger()
+        public Debugger(Nes nes)
         {
             InitializeComponent();
-            nes = new Nes("Roms/Super Mario Bros. (E).nes");
-
+            this.nes = nes;
 
             UpdateScreen();
         }
@@ -95,7 +94,7 @@ namespace Emu6502
 
         private void interruptReset_Click(object sender, EventArgs e)
         {
-            nes.Cpu.Reset();
+            nes.Reset();
             UpdateScreen();
         }
 

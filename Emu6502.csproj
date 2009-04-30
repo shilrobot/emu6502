@@ -66,6 +66,13 @@
     <Compile Include="IMemory.cs" />
     <Compile Include="Nes.cs" />
     <Compile Include="NesMemory.cs" />
+    <Compile Include="Ppu.cs" />
+    <Compile Include="PpuOutput.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PpuOutput.Designer.cs">
+      <DependentUpon>PpuOutput.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Debugger.resx">
@@ -73,6 +80,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PpuOutput.resx">
+      <DependentUpon>PpuOutput.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

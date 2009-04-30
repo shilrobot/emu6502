@@ -26,21 +26,22 @@ namespace Emu6502
         public byte SP; // Stack pointer
         public IMemory Mem;
 
+        private int ignoreOpcodes = 0;
+
         public Chip6502(IMemory mem)
         {
             Mem = mem;
             Reset();
         }
 
-        public void DumpRegs()
+        public string DumpRegs()
         {
-            Console.WriteLine("PC={0:X4} SP={1:X2} A={2:X2} X={3:X2} Y={4:x2} C={5} Z={6} I={7} V={8} N={9}",
+            return String.Format("PC={0:X4} SP={1:X2} A={2:X2} X={3:X2} Y={4:x2} C={5} Z={6} I={7} V={8} N={9}",
                 PC, SP, A, X, Y, C ? 1 : 0, Z ? 1 : 0, I ? 1 : 0, V ? 1 : 0, N ? 1 : 0);
         }
 
         public void Reset()
         {
-            Console.WriteLine("6502 Reset");
             A = X = Y = 0;
             // Load PC from reset vector
             PC = ReadWord(ResetAddr);
@@ -48,28 +49,32 @@ namespace Emu6502
             C = I = V = N = false;
             Z = true;
             SP = 0xFF;
+            ignoreOpcodes = 0;
+            Console.WriteLine("6502 Reset -> Jump to ${0:X4}", PC);
         }
 
         // In practice this is connected to the vertical retrace from the PPU
         public void NMI()
         {
-            Console.WriteLine("6502 NMI");
             PushWord(PC);
             PushStatus(false);
             I = true;
             PC = ReadWord(NMIAddr);
+            Console.WriteLine("6502 NMI -> Jump to ${0:X4}", PC);
         }
 
         public void IRQ()
         {
-            Console.WriteLine("6502 IRQ");
             if (!I)
             {
                 PushWord(PC);
                 PushStatus(false);
                 I = true;
                 PC = ReadWord(IRQAddr);
+                Console.WriteLine("6502 IRQ -> Jump to ${0:X4}", PC);
             }
+            else
+                Console.WriteLine("6502 IRQ (Ignored)");
         }
 
         private byte Read(int addr)
