@@ -1,0 +1,306 @@
+
+LDA {{
+READ;
+A = data;
+SETNZ;
+}}
+
+STA {{
+data = A;
+WRITE;
+}}
+
+LDX {{
+READ;
+X = data;
+SETNZ;
+}}
+
+STX {{
+data = X;
+WRITE;
+}}
+
+LDY {{
+READ;
+Y = data;
+SETNZ;
+}}
+
+STY {{
+data = Y;
+WRITE;
+}}
+
+AND {{
+READ;
+data &= A;
+A = data;
+SETNZ;
+}}
+
+ORA {{
+READ;
+data |= A;
+A = data;
+SETNZ;
+}}
+
+EOR {{
+READ;
+data ^= A;
+A = data;
+SETNZ;
+}}
+
+BIT {{
+READ;
+N = (data & 0x80)!=0; // bit 7
+V = (data & 0x40)!=0; // bit 6
+Z = (A & data) == 0;
+}}
+
+CMP {{
+READ;
+C = A >= data;
+data = (byte)(A - data);
+SETNZ;
+}}
+
+CPX {{
+READ;
+C = X >= data;
+data = (byte)(X - data);
+SETNZ;
+}}
+
+CPY {{
+READ;
+C = Y >= data;
+data = (byte)(Y - data);
+SETNZ;
+}}
+
+// TODO: ADC, SBC, w/ overflow bit
+
+ASL {{
+READ;
+C = (data & SignBit)!=0;
+data <<= 1;
+WRITE;
+SETNZ;
+}}
+
+LSR {{
+READ;
+C = (data & 0x1)!=0;
+data >>= 1;
+WRITE;
+SETNZ;
+}}
+
+ROL {{
+READ;
+bool oldC = C;
+C = (data & SignBit)!=0;
+data <<= 1;
+if(oldC) data |= 1;
+WRITE;
+SETNZ;
+}}
+
+ROR {{
+READ;
+bool oldC = C;
+C = (data & 0x1)!=0;
+data >>= 1;
+if(oldC) data |= 0x80;
+WRITE;
+SETNZ;
+}}
+
+INC {{
+READ;
+++data;
+WRITE;
+SETNZ;
+}}
+
+DEC {{
+READ;
+--data;
+WRITE;
+SETNZ;
+}}
+
+// TODO: Indirect jump bug(!) - see http://www.atariarchives.org/2bml/chapter_10.php
+JMP {{
+NPC = addr;
+}}
+
+JSR {{
+PushWord((ushort)(NPC-1));
+NPC = addr;
+}}
+
+BRK {{
+// 2nd byte after BRK is skipped
+NPC++;
+// This is essentially the same as IRQ
+if(!I) {
+	PushWord(NPC);
+	PushStatus(true);
+	I = true;
+	NPC = ReadWord(0xFFFE);
+}
+}}
+
+RTS {{
+NPC = (ushort)(PullWord()+1);
+}}
+
+RTI {{
+PullStatus();
+NPC = PullWord();
+}}
+
+PHP {{
+PushStatus(false);
+}}
+
+PLP {{
+PullStatus();
+}}
+
+
+PHA {{
+Push(A);
+}}
+
+PLA {{
+data = Pull();
+A = data;
+SETNZ;
+}}
+
+INX {{
+X++;
+data = X;
+SETNZ;
+}}
+
+DEX {{
+X--;
+data = X;
+SETNZ;
+}}
+
+INY {{
+Y++;
+data = Y;
+SETNZ;
+}}
+
+DEY {{
+Y--;
+data = Y;
+SETNZ;
+}}
+
+TAX {{
+data = A;
+X = data;
+SETNZ;
+}}
+
+TXA {{
+data = X;
+A = data;
+SETNZ;
+}}
+
+TAY {{
+data = A;
+Y = data;
+SETNZ;
+}}
+
+TYA {{
+data = Y;
+A = data;
+SETNZ;
+}}
+
+TSX {{
+data = SP;
+X = data;
+SETNZ;
+}}
+
+TXS {{
+SP = X;
+}}
+
+SED {{
+// Not implemented on NES
+}}
+
+CLD {{
+// Not implemented on NES
+}}
+
+SEI {{
+I = true;
+}}
+
+CLI {{
+I = false;
+}}
+
+SEC {{
+C = true;
+}}
+
+CLC {{
+C = false;
+}}
+
+CLV {{
+V = false;
+}}
+
+BEQ {{
+BRANCH(!Z);
+}}
+
+BNE {{
+BRANCH(Z);
+}}
+
+BMI {{
+BRANCH(N);
+}}
+
+BPL {{
+BRANCH(!N);
+}}
+
+BCC {{
+BRANCH(!C);
+}}
+
+BCS {{
+BRANCH(C);
+}}
+
+BVC {{
+BRANCH(!V);
+}}
+
+BVS {{
+BRANCH(!V);
+}}
+
+NOP {{
+// do-nothing
+}}

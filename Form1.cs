@@ -16,11 +16,41 @@ namespace Emu6502
             InitializeComponent();
         }
 
+        private class DisasmMemory : IMemory
+        {
+            private byte[] data = new byte[65536];
+
+            // TODO: Handle address wraparound?
+            public byte Read(int addr) { return data[addr]; }
+            public void Write(int addr, byte b) { data[addr] = b; }
+        }
+
         private void disassemble_Click(object sender, EventArgs e)
         {
-            List<byte> data = new List<byte>();
+            int addr = 0;
+
+            try
+            {
+                addr = Convert.ToInt32(startAddr.Text.Trim(), 16);
+            }
+            catch
+            {
+                outputBox.Text = "Malformed address";
+                return;
+            }
+
+            if (addr < 0 || addr > 0xFFFF)
+            {
+                outputBox.Text = "Address out of range";
+                return;
+            }
+
+            DisasmMemory mem = new DisasmMemory();
+            int currAddr = addr;
+
             // lol slow
             string[] octets = hexBox.Text.Split(' ', '\t', '\n', '\r');
+            int count = 0;
             foreach (string octet in octets)
             {
                 if(octet.Length == 0)
@@ -41,23 +71,19 @@ namespace Emu6502
                     outputBox.Text = "Malformed input";
                     return;
                 }
-                data.Add(value);
+
+                if (currAddr > 0xFFFF)
+                {
+                    outputBox.Text = "Exceeded memory limits";
+                    return;
+                }
+
+                mem.Write(currAddr, value);
+                ++currAddr;
+                ++count;
             }
 
-            /*
-            Disassembler disasm = new Disassembler(0, data.ToArray());
-            try
-            {
-                disasm.Disassemble();
-            }
-            catch (DisassemblyException ex)
-            {
-                outputBox.Text = ex.Message;
-                return;
-            }
-             * */
-
-            outputBox.Text = Disassembler.Disassemble(data.ToArray(), 0);
+            outputBox.Text = Disassembler.Disassemble(mem, addr, count);
         }
 
     }

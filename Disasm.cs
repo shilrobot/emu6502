@@ -25,18 +25,22 @@ namespace Emu6502
     public class Disassembler
     {
         // TODO: Allow for different "display addreses" versus actual internal addresses to 'data'
-        public static string Disassemble(byte[] data, int addr)
+        public static string Disassemble(IMemory mem, int addr, int count)
         {
             StringBuilder sb = new StringBuilder();
-            while (addr < data.Length)
+            while (count > 0)
             {
                 int consumed;
-                if (DisassembleOne(data, addr, sb, out consumed))
+                if (DisassembleOne(mem, addr, count, sb, out consumed))
+                {
                     addr += consumed;
+                    count -= consumed;
+                }
                 else
                 {
-                    DB(sb, addr, data[addr]);
+                    DB(sb, addr, mem.Read(addr));
                     ++addr;
+                    --count;
                 }
             }
             return sb.ToString();
@@ -47,33 +51,32 @@ namespace Emu6502
             sb.AppendFormat("{0:X4}   {1:X2}         .DB ${1:X2}\r\n", addr, b);
         }
 
-        private static bool DisassembleOne(byte[] data, int addr, StringBuilder sb, out int bytesConsumed)
+        private static bool DisassembleOne(IMemory mem, int addr, int count, StringBuilder sb, out int bytesConsumed)
         {
             bytesConsumed = 0;
 
-            if (data == null)
+            if (mem == null)
                 throw new ArgumentNullException("data");
 
             if (sb == null)
                 throw new ArgumentNullException("sb");
 
             if (addr < 0 ||
-                addr > 0xFFFF ||
-                addr >= data.Length)
+                addr > 0xFFFF)
                 throw new ArgumentOutOfRangeException("addr");
 
-            byte opcode = data[addr];
+            byte opcode = mem.Read(addr);
             if (opNames[opcode] == null)
                 return false;
             AddressMode mode = addrModes[opcode];
             int byteCount = byteCounts[(int)mode];
-            if (data.Length - addr < byteCount)
+            if (count < byteCount)
                 return false;
             byte lo = 0, hi = 0;
             if (byteCount >= 2)
-                lo = data[addr + 1];
+                lo = mem.Read(addr + 1);
             if (byteCount == 3)
-                hi = data[addr + 2];
+                hi = mem.Read(addr + 2);
             
             if(byteCount == 3)
                 sb.AppendFormat("{0:X4}   {1:X2} {2:X2} {3:X2}   {4}", addr, opcode, lo, hi, opNames[opcode]);
@@ -81,6 +84,8 @@ namespace Emu6502
                 sb.AppendFormat("{0:X4}   {1:X2} {2:X2}      {3}", addr, opcode, lo, opNames[opcode]);
             else if (byteCount == 1)
                 sb.AppendFormat("{0:X4}   {1:X2}         {2}", addr, opcode, opNames[opcode]);
+
+            // TODO: Handle don't-care byte for BRK!
 
             switch (mode)
             {
@@ -97,7 +102,7 @@ namespace Emu6502
                     sb.AppendFormat(" ${0:X2},Y", lo);
                     break;
                 case AddressMode.Accumulator:
-                    sb.AppendFormat(" A", lo);
+                    //sb.AppendFormat(" A", lo);
                     break;
                 case AddressMode.Absolute:
                     sb.AppendFormat(" ${0:X2}{1:X2}", hi, lo);
@@ -107,6 +112,9 @@ namespace Emu6502
                     break;
                 case AddressMode.AbsoluteIndexedY:
                     sb.AppendFormat(" ${0:X2}{1:X2},Y", hi, lo);
+                    break;
+                case AddressMode.Indirect:
+                    sb.AppendFormat(" (${0:X2}{1:X2})", hi, lo);
                     break;
                 case AddressMode.IndexedIndirectX:
                     sb.AppendFormat(" (${0:X2},X)", lo);
@@ -118,7 +126,12 @@ namespace Emu6502
                     break;
                 case AddressMode.Relative:
                     // TODO: Appropriate sign shit/maybe print out full address
-                    sb.AppendFormat(" ${0:X2}", lo);
+                    {
+                        int offset = (lo <= 127) ? lo : lo - 256;
+                        int targetAddr = (addr + 2 + offset) & 0xFFFF;
+                        sb.AppendFormat(" ${0:X4}", targetAddr);
+                    }
+                    //sb.AppendFormat(" ${0:X2}", lo);
                     break;
             }
 
@@ -184,262 +197,70 @@ null, "STA", null, null, "STY", "STA", "STX", null,
 
         private static AddressMode[] addrModes = new AddressMode[] {
             /* BEGIN MODES */
-AddressMode.Implied,
-AddressMode.IndexedIndirectX,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.ZeroPage,
-AddressMode.ZeroPage,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Immediate,
-AddressMode.Accumulator,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Absolute,
-AddressMode.Absolute,
-AddressMode.Implied,
-AddressMode.Relative,
-AddressMode.IndirectIndexedY,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.ZeroPageIndexedX,
-AddressMode.ZeroPageIndexedX,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.AbsoluteIndexedY,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.AbsoluteIndexedX,
-AddressMode.AbsoluteIndexedX,
-AddressMode.Implied,
-AddressMode.Absolute,
-AddressMode.IndexedIndirectX,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.ZeroPage,
-AddressMode.ZeroPage,
-AddressMode.ZeroPage,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Immediate,
-AddressMode.Accumulator,
-AddressMode.Implied,
-AddressMode.Absolute,
-AddressMode.Absolute,
-AddressMode.Absolute,
-AddressMode.Implied,
-AddressMode.Relative,
-AddressMode.IndirectIndexedY,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.ZeroPageIndexedX,
-AddressMode.ZeroPageIndexedX,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.AbsoluteIndexedY,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.AbsoluteIndexedX,
-AddressMode.AbsoluteIndexedX,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.IndexedIndirectX,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.ZeroPage,
-AddressMode.ZeroPage,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Immediate,
-AddressMode.Accumulator,
-AddressMode.Implied,
-AddressMode.Absolute,
-AddressMode.Absolute,
-AddressMode.Absolute,
-AddressMode.Implied,
-AddressMode.Relative,
-AddressMode.IndirectIndexedY,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.ZeroPageIndexedX,
-AddressMode.ZeroPageIndexedX,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.AbsoluteIndexedY,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.AbsoluteIndexedX,
-AddressMode.AbsoluteIndexedX,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.IndexedIndirectX,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.ZeroPage,
-AddressMode.ZeroPage,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Immediate,
-AddressMode.Accumulator,
-AddressMode.Implied,
-AddressMode.Indirect,
-AddressMode.Absolute,
-AddressMode.Absolute,
-AddressMode.Implied,
-AddressMode.Relative,
-AddressMode.IndirectIndexedY,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.ZeroPageIndexedX,
-AddressMode.ZeroPageIndexedX,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.AbsoluteIndexedY,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.AbsoluteIndexedX,
-AddressMode.AbsoluteIndexedX,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.IndexedIndirectX,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.ZeroPage,
-AddressMode.ZeroPage,
-AddressMode.ZeroPage,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Absolute,
-AddressMode.Absolute,
-AddressMode.Absolute,
-AddressMode.Implied,
-AddressMode.Relative,
-AddressMode.IndirectIndexedY,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.ZeroPageIndexedX,
-AddressMode.ZeroPageIndexedX,
-AddressMode.ZeroPageIndexedY,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.AbsoluteIndexedY,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.AbsoluteIndexedX,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Immediate,
-AddressMode.IndexedIndirectX,
-AddressMode.Immediate,
-AddressMode.Implied,
-AddressMode.ZeroPage,
-AddressMode.ZeroPage,
-AddressMode.ZeroPage,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Immediate,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Absolute,
-AddressMode.Absolute,
-AddressMode.Absolute,
-AddressMode.Implied,
-AddressMode.Relative,
-AddressMode.IndirectIndexedY,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.ZeroPageIndexedX,
-AddressMode.ZeroPageIndexedX,
-AddressMode.ZeroPageIndexedY,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.AbsoluteIndexedY,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.AbsoluteIndexedX,
-AddressMode.AbsoluteIndexedX,
-AddressMode.AbsoluteIndexedY,
-AddressMode.Implied,
-AddressMode.Immediate,
-AddressMode.IndexedIndirectX,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.ZeroPage,
-AddressMode.ZeroPage,
-AddressMode.ZeroPage,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Immediate,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Absolute,
-AddressMode.Absolute,
-AddressMode.Absolute,
-AddressMode.Implied,
-AddressMode.Relative,
-AddressMode.IndirectIndexedY,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.ZeroPageIndexedX,
-AddressMode.ZeroPageIndexedX,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.AbsoluteIndexedY,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.AbsoluteIndexedX,
-AddressMode.AbsoluteIndexedX,
-AddressMode.Implied,
-AddressMode.Immediate,
-AddressMode.IndexedIndirectX,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.ZeroPage,
-AddressMode.ZeroPage,
-AddressMode.ZeroPage,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Immediate,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Absolute,
-AddressMode.Absolute,
-AddressMode.Absolute,
-AddressMode.Implied,
-AddressMode.Relative,
-AddressMode.IndirectIndexedY,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.ZeroPageIndexedX,
-AddressMode.ZeroPageIndexedX,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.AbsoluteIndexedY,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.Implied,
-AddressMode.AbsoluteIndexedX,
-AddressMode.AbsoluteIndexedX,
-AddressMode.Implied,
+AddressMode.Implied, AddressMode.IndexedIndirectX, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.ZeroPage, AddressMode.ZeroPage, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.Immediate, AddressMode.Accumulator, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.Absolute, AddressMode.Absolute, AddressMode.Implied, 
+AddressMode.Relative, AddressMode.IndirectIndexedY, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.ZeroPageIndexedX, AddressMode.ZeroPageIndexedX, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.AbsoluteIndexedY, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.AbsoluteIndexedX, AddressMode.AbsoluteIndexedX, AddressMode.Implied, 
+AddressMode.Absolute, AddressMode.IndexedIndirectX, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.ZeroPage, AddressMode.ZeroPage, AddressMode.ZeroPage, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.Immediate, AddressMode.Accumulator, AddressMode.Implied, 
+AddressMode.Absolute, AddressMode.Absolute, AddressMode.Absolute, AddressMode.Implied, 
+AddressMode.Relative, AddressMode.IndirectIndexedY, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.ZeroPageIndexedX, AddressMode.ZeroPageIndexedX, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.AbsoluteIndexedY, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.AbsoluteIndexedX, AddressMode.AbsoluteIndexedX, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.IndexedIndirectX, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.ZeroPage, AddressMode.ZeroPage, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.Immediate, AddressMode.Accumulator, AddressMode.Implied, 
+AddressMode.Absolute, AddressMode.Absolute, AddressMode.Absolute, AddressMode.Implied, 
+AddressMode.Relative, AddressMode.IndirectIndexedY, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.ZeroPageIndexedX, AddressMode.ZeroPageIndexedX, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.AbsoluteIndexedY, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.AbsoluteIndexedX, AddressMode.AbsoluteIndexedX, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.IndexedIndirectX, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.ZeroPage, AddressMode.ZeroPage, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.Immediate, AddressMode.Accumulator, AddressMode.Implied, 
+AddressMode.Indirect, AddressMode.Absolute, AddressMode.Absolute, AddressMode.Implied, 
+AddressMode.Relative, AddressMode.IndirectIndexedY, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.ZeroPageIndexedX, AddressMode.ZeroPageIndexedX, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.AbsoluteIndexedY, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.AbsoluteIndexedX, AddressMode.AbsoluteIndexedX, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.IndexedIndirectX, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.ZeroPage, AddressMode.ZeroPage, AddressMode.ZeroPage, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.Implied, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.Absolute, AddressMode.Absolute, AddressMode.Absolute, AddressMode.Implied, 
+AddressMode.Relative, AddressMode.IndirectIndexedY, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.ZeroPageIndexedX, AddressMode.ZeroPageIndexedX, AddressMode.ZeroPageIndexedY, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.AbsoluteIndexedY, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.AbsoluteIndexedX, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.Immediate, AddressMode.IndexedIndirectX, AddressMode.Immediate, AddressMode.Implied, 
+AddressMode.ZeroPage, AddressMode.ZeroPage, AddressMode.ZeroPage, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.Immediate, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.Absolute, AddressMode.Absolute, AddressMode.Absolute, AddressMode.Implied, 
+AddressMode.Relative, AddressMode.IndirectIndexedY, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.ZeroPageIndexedX, AddressMode.ZeroPageIndexedX, AddressMode.ZeroPageIndexedY, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.AbsoluteIndexedY, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.AbsoluteIndexedX, AddressMode.AbsoluteIndexedX, AddressMode.AbsoluteIndexedY, AddressMode.Implied, 
+AddressMode.Immediate, AddressMode.IndexedIndirectX, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.ZeroPage, AddressMode.ZeroPage, AddressMode.ZeroPage, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.Immediate, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.Absolute, AddressMode.Absolute, AddressMode.Absolute, AddressMode.Implied, 
+AddressMode.Relative, AddressMode.IndirectIndexedY, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.ZeroPageIndexedX, AddressMode.ZeroPageIndexedX, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.AbsoluteIndexedY, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.AbsoluteIndexedX, AddressMode.AbsoluteIndexedX, AddressMode.Implied, 
+AddressMode.Immediate, AddressMode.IndexedIndirectX, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.ZeroPage, AddressMode.ZeroPage, AddressMode.ZeroPage, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.Immediate, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.Absolute, AddressMode.Absolute, AddressMode.Absolute, AddressMode.Implied, 
+AddressMode.Relative, AddressMode.IndirectIndexedY, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.ZeroPageIndexedX, AddressMode.ZeroPageIndexedX, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.AbsoluteIndexedY, AddressMode.Implied, AddressMode.Implied, 
+AddressMode.Implied, AddressMode.AbsoluteIndexedX, AddressMode.AbsoluteIndexedX, AddressMode.Implied, 
 /* END MODES */
         };
     }
