@@ -20,7 +20,7 @@ namespace Emu6502
 
         public void SaveEncounteredInstructions()
         {
-            StreamWriter sw = new StreamWriter("EncounteredInstructions.txt");
+            StreamWriter sw = new StreamWriter("EncounteredInstructions.csv");
             foreach (string s in encountered.Keys)
             {
                 sw.WriteLine("{0},{1}", s, encountered[s]);
@@ -1500,11 +1500,11 @@ break;
                 if(false) Console.WriteLine("Jumping from ${0:X2} to ${1:X2}", PC, NPC);*/
 
             PC = NPC;
-            if (SingleStep)
+            /*if (SingleStep)
             {
                 Paused = true;
                 SingleStep = false;
-            }
+            }*/
         }
     }
 }

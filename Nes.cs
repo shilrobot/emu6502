@@ -65,7 +65,9 @@ namespace Emu6502
                     }
                 }
 
-                Ppu.Tick();
+                ++Ppu.ScanlineCycle;
+                if (Ppu.ScanlineCycle >= Ppu.ClocksPerScanline)
+                    Ppu.FinishScanline();
 
                 if (Ppu.VsyncSignalToMainLoop)
                 {

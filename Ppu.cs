@@ -37,8 +37,8 @@ namespace Emu6502
         public bool VsyncSignalToMainLoop = false;
         public bool SpriteHitFlag;
 
-        private int ScanlineIndex = 0; // Essentially "Y" counter
-        private int ScanlineCycle = 0; // Essentially "X" counter
+        public int ScanlineIndex = 0; // Essentially "Y" counter
+        public int ScanlineCycle = 0; // Essentially "X" counter
 
         public Ppu(Nes nes)
         {
@@ -320,11 +320,11 @@ namespace Emu6502
 
         }
 
-        public void Tick()
+        public void FinishScanline()
         {
-            ScanlineCycle++;
+            /*ScanlineCycle++;
             if (ScanlineCycle >= ClocksPerScanline)
-            {
+            {*/
                 int row = ScanlineIndex - VsyncScanlines;
                 if (row >= 0 && row < ScreenHeight)
                     RenderRow(row);
@@ -340,7 +340,7 @@ namespace Emu6502
                     ScanlineIndex = 0;
                     Vsync();
                 }
-            }
+            //}
 
         }
 

@@ -26,7 +26,7 @@ namespace Emu6502
 
         public byte Read(int addr)
         {
-            addr = addr & 0xFFFF;
+            //addr = addr & 0xFFFF;
 
             //Console.WriteLine("Read ${0:X4}", addr);
 
