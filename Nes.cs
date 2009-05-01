@@ -52,7 +52,7 @@ namespace Emu6502
             // TODO: Cycle-accurate CPU simulator
             ++cpuCycles;
             //if (cpuCycles == 3)
-            if(cpuCycles == 3*3) // Hack hack - until we get better timings
+            if(cpuCycles == 3) // Hack hack - until we get better timings
             {
                 cpuCycles = 0;
                 Cpu.Tick();
