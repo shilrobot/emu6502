@@ -7,6 +7,7 @@ using System.Drawing.Imaging;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using System.Runtime.InteropServices;
 
 namespace Emu6502
 {
@@ -147,11 +148,16 @@ namespace Emu6502
                 }
         }
 
+        protected override void OnPaintBackground(PaintEventArgs e)
+        {
+            //base.OnPaintBackground(e);
+        }
+
         private unsafe void PpuOutput_Paint(object sender, PaintEventArgs e)
         {
             // TODO: Now we have to actually make this fancy so we can see what the shit is going on.
 
-            int baseNametableAddr = 0;
+            /*int baseNametableAddr = 0;
             if ((ppu.PpuCtrl & 0x3) == 0)
                 baseNametableAddr = 0x2000;
             else if ((ppu.PpuCtrl & 0x3) == 1)
@@ -170,7 +176,7 @@ namespace Emu6502
                 eightBySixteen = true;
 
             bool enableBG = (ppu.PpuMask & 0x08) != 0;
-            bool enableSprites = (ppu.PpuMask & 0x10) != 0;
+            bool enableSprites = (ppu.PpuMask & 0x10) != 0;*/
 
             Graphics g = e.Graphics;
             //g.SetClip(new Rectangle(0, 0, 256, 262)); // NTSC clipping
@@ -186,19 +192,10 @@ namespace Emu6502
                 bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height),
                                 System.Drawing.Imaging.ImageLockMode.WriteOnly,
                                  System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-            int[] fb = ppu.Framebuffer;
-            for (int y = 0; y < Ppu.ScreenHeight; ++y)
-            {
-                //int* scanlineIn = &ppu.Framebuffer[y * Ppu.ScreenWidth];
-                int fbOff = y * Ppu.ScreenWidth;
-                int* scanlineOut = (int*)data.Scan0 + (data.Stride/4) * y;
-                for (int x = 0; x < Ppu.ScreenWidth; ++x)
-                    *(scanlineOut++) = fb[fbOff++];
-            }
-
+            // Assume we have zero stride (not exactly safe?)
+            Marshal.Copy(ppu.Framebuffer, 0, data.Scan0, bmp.Width * bmp.Height);
             bmp.UnlockBits(data);
-            g.DrawImage(bmp, 0, 0, ClientSize.Width, ClientSize.Height);
+            g.DrawImageUnscaledAndClipped(bmp, new Rectangle(0, 0, ClientSize.Width, ClientSize.Height));
 
             String hud = String.Format("FPS {0:0.0}", ppu.ParentNes.FPS);
             g.DrawString(hud, new Font("Courier New", 8), new SolidBrush(Color.White), 0, 0);
