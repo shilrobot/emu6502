@@ -1,7 +1,11 @@
 
 #define SETNZ Z = (data == 0); N = (data > 127);
-#define LO Read(PC+1)
-#define HI Read(PC+2)
+
+#define RD(addr) Read(addr)
+#define RDW(addr) ReadWord(addr)
+
+#define LO RD(PC+1)
+#define HI RD(PC+2)
 #define HILO ReadWord(PC+1)
 	 
 #define AGEN_IMM	
@@ -15,29 +19,29 @@
 // Only used for jump indirect -- simulate JMP INDIRECT page wraparound "bug"
 #define AGEN_IND	{  \
 						ushort addr1 = HILO; \
-						byte addr2_lo = Read(addr1); \
+						byte addr2_lo = RD(addr1); \
 						addr1 = (ushort)((addr1 & 0xFF00) | ((addr1+1)&0xFF)); \
-						byte addr2_hi = Read(addr1); \
+						byte addr2_hi = RD(addr1); \
 						addr = (ushort)(addr2_lo | (addr2_hi<<8)); \
 					}
-#define AGEN_INDX	addr = ReadWord((ushort)(LO+X));
-#define AGEN_INDY	addr = (ushort)(ReadWord(LO)+Y);
+#define AGEN_INDX	addr = RDW((ushort)(LO+X));
+#define AGEN_INDY	addr = (ushort)(RDW(LO)+Y);
 #define AGEN_IMPL
 #define AGEN_REL
 
 // TODO: For indirect, the next byte is wraps around to beginning of page! :(
 
 #define READ_IMM 	data = LO;
-#define READ_ZP 	data = Read(addr);
-#define READ_ZPX 	data = Read(addr);
-#define READ_ZPY 	data = Read(addr);
+#define READ_ZP 	data = RD(addr);
+#define READ_ZPX 	data = RD(addr);
+#define READ_ZPY 	data = RD(addr);
 #define READ_A		data = A;
-#define READ_ABS 	data = Read(addr);
-#define READ_ABSX	data = Read(addr);
-#define READ_ABSY	data = Read(addr);
-#define READ_IND	data = Read(addr);
-#define READ_INDX	data = Read(addr);
-#define READ_INDY	data = Read(addr);
+#define READ_ABS 	data = RD(addr);
+#define READ_ABSX	data = RD(addr);
+#define READ_ABSY	data = RD(addr);
+#define READ_IND	data = RD(addr);
+#define READ_INDX	data = RD(addr);
+#define READ_INDY	data = RD(addr);
 #define READ_IMPL
 #define READ_REL	// TODO: Hmm
 

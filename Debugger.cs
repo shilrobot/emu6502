@@ -176,5 +176,10 @@ namespace Emu6502
             // TODO: Blah, cleaner stuff for this
             UpdateScreen();
         }
+
+        private void Debugger_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            nes.Cpu.SaveEncounteredInstructions();
+        }
     }
 }

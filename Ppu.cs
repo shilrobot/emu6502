@@ -255,8 +255,10 @@ namespace Emu6502
             int rowStart = ScreenWidth*row;
 
             // Clear BG
-            for (int n = 0; n < ScreenWidth; ++n)
-                Framebuffer[rowStart + n] = 0xFF << 24 | 0x0000FF;
+            const int bgcolor = (0xFF << 24) | 0x0000FF;
+            int pos = rowStart;
+            for (int n = ScreenWidth - 1; n >= 0; --n)
+                Framebuffer[pos++] = bgcolor;
 
             int spritePatternTableAddr = (PpuCtrl & 0x08)!=0 ? 0x1000 : 0x0000;
 
@@ -331,14 +333,15 @@ namespace Emu6502
                     SpriteHitFlag = true;
                 ++ScanlineIndex;
                 ScanlineCycle = 0;
+
+                if (ScanlineIndex >= Scanlines)
+                {
+                    ScanlineCycle = 0;
+                    ScanlineIndex = 0;
+                    Vsync();
+                }
             }
 
-            if (ScanlineIndex >= Scanlines)
-            {
-                ScanlineCycle = 0;
-                ScanlineIndex = 0;
-                Vsync();
-            }
         }
 
         private void ShowFrame()

@@ -30,6 +30,75 @@ namespace Emu6502
 
             //Console.WriteLine("Read ${0:X4}", addr);
 
+            switch(addr & 0xF000)
+            {
+                case 0x0000:
+                case 0x1000:
+                    //Console.WriteLine(" -> RAM ${0:X4} = ${1:X2}", addr, RAM[addr]);
+                    return RAM[addr & 0x7FF];
+                case 0x2000:
+                case 0x3000:
+                    {
+                        addr = 0x2000 | (addr & 0x7);
+
+                        byte b;
+                        switch (addr)
+                        {
+                            case 0x2002:
+                                b = nes.Ppu.ReadPpuStatus();
+                                break;
+                            case 0x2003:
+                                b = nes.Ppu.ReadOAMData();
+                                break;
+                            case 0x2007:
+                                b = nes.Ppu.ReadPpuData();
+                                break;
+                            default:
+                                b = 0x0;
+                                break;
+                        }
+
+                        /*if (addr != 0x2002)
+                            Console.WriteLine("R IO ${0:X4} = ${1:X2}", addr, b);*/
+
+                        return b;
+                    }
+                // APU registers & expansion ROM
+                case 0x4000:
+                case 0x5000:
+                    {
+                        /*if (addr < 0x4020)
+                        {
+                            //Console.WriteLine("R IO ${0:X4}", addr);
+
+                        }*/
+                        return 0;
+                    }
+
+                // Save ram (TODO)
+                case 0x6000:
+                case 0x7000:
+                    return 0;
+
+                // Temp. NROM emulation
+                case 0x8000:
+                case 0x9000:
+                case 0xA000:
+                case 0xB000:
+                    return rom.PrgRomBanks[0][addr & 0x3FFF];
+
+                case 0xC000:
+                case 0xD000:
+                case 0xE000:
+                case 0xF000:
+                    return rom.PrgRomBanks[1][addr & 0x3FFF];
+
+                // Shut up, C# compiler
+                default:
+                    return 0;
+            }
+
+#if false
             if (addr < 0x2000)
             {
                 // RAM mirroring
@@ -94,6 +163,7 @@ namespace Emu6502
                 //Console.WriteLine(" -> PRG-ROM ${0:X4} = ${1:X2}", addr, b);
                 return b;
             }
+#endif
         }
 
 

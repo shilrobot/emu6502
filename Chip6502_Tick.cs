@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 
 namespace Emu6502
 {
     partial class Chip6502
     {
-        private Dictionary<string, int> encountered = new Dictionary<string, int>();
+        private Dictionary<string, long> encountered = new Dictionary<string, long>();
 
         private void Encountered(string opname)
         {
@@ -15,6 +16,15 @@ namespace Emu6502
                 encountered[opname] += 1;
             else
                 encountered[opname] = 1;
+        }
+
+        public void SaveEncounteredInstructions()
+        {
+            StreamWriter sw = new StreamWriter("EncounteredInstructions.txt");
+            foreach (string s in encountered.Keys)
+            {
+                sw.WriteLine("{0},{1}", s, encountered[s]);
+            }
         }
         
         // From FCEUX, no need to retype all this crap
@@ -55,14 +65,13 @@ namespace Emu6502
             ushort addr;
             byte data;
 
-            byte opcode = Read(PC);
+            byte opcode = Mem.Read(PC);
             switch (opcode)
             {
                 /* BEGIN SWITCH */
 case 0x00:
 {
 NPC = (ushort)(PC+1);
-if(false) Console.WriteLine("${0:X4}: BRK", PC);
 NPC++;
 if(!I) {
  PushWord(NPC);
@@ -106,7 +115,6 @@ break;
 case 0x08:
 {
 NPC = (ushort)(PC+1);
-if(false) Console.WriteLine("${0:X4}: PHP", PC);
 PushStatus(false);
 }
 break;
@@ -246,7 +254,6 @@ case 0x24:
 {
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
-if(false) Console.WriteLine("${0:X4}: BIT", PC);
 data = Read(addr);
 N = (data & 0x80)!=0;
 V = (data & 0x40)!=0;
@@ -279,7 +286,6 @@ break;
 case 0x28:
 {
 NPC = (ushort)(PC+1);
-if(false) Console.WriteLine("${0:X4}: PLP", PC);
 PullStatus();
 }
 break;
@@ -308,7 +314,6 @@ case 0x2C:
 {
 NPC = (ushort)(PC+3);
 addr = ReadWord(PC+1);
-if(false) Console.WriteLine("${0:X4}: BIT", PC);
 data = Read(addr);
 N = (data & 0x80)!=0;
 V = (data & 0x40)!=0;
@@ -419,7 +424,6 @@ break;
 case 0x40:
 {
 NPC = (ushort)(PC+1);
-if(false) Console.WriteLine("${0:X4}: RTI", PC);
 PullStatus();
 NPC = PullWord();
 }
@@ -548,7 +552,6 @@ break;
 case 0x58:
 {
 NPC = (ushort)(PC+1);
-if(false) Console.WriteLine("${0:X4}: CLI", PC);
 I = false;
 }
 break;
@@ -735,7 +738,6 @@ break;
 case 0x78:
 {
 NPC = (ushort)(PC+1);
-if(false) Console.WriteLine("${0:X4}: SEI", PC);
 I = true;
 }
 break;
@@ -1254,7 +1256,6 @@ break;
 case 0xD8:
 {
 NPC = (ushort)(PC+1);
-if(false) Console.WriteLine("${0:X4}: CLD", PC);
 }
 break;
 case 0xD9:
@@ -1439,7 +1440,6 @@ break;
 case 0xF8:
 {
 NPC = (ushort)(PC+1);
-if(false) Console.WriteLine("${0:X4}: SED", PC);
 }
 break;
 case 0xF9:
@@ -1496,8 +1496,8 @@ break;
 
             cycles += Cycles[opcode];
 
-            if ((PC & 0xF000) != (NPC & 0xF000))
-                if(false) Console.WriteLine("Jumping from ${0:X2} to ${1:X2}", PC, NPC);
+            /*if ((PC & 0xF000) != (NPC & 0xF000))
+                if(false) Console.WriteLine("Jumping from ${0:X2} to ${1:X2}", PC, NPC);*/
 
             PC = NPC;
             if (SingleStep)
