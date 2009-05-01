@@ -6,9 +6,13 @@ using System.Diagnostics;
 
 namespace Emu6502
 {
+
     public class Nes
     {
         public const long PpuTicksPerSecond = 5369318;
+
+        public Controller Controller1 = new Controller();
+        public Controller Controller2 = new Controller();
 
         public Rom Rom;
         public Chip6502 Cpu;
@@ -44,13 +48,17 @@ namespace Emu6502
             sw.Start();
         }
 
-        public void Run()
+        public int Run(int cpuCycles, out bool render)
         {
-            if (Cpu.Paused)
-                return;
+            render = false;
 
-            while (true)
+            if (Cpu.Paused)
+                return cpuCycles;
+
+            while (cpuCycles > 0)
             {
+                --cpuCycles;
+
                 // CPU clock is 1/3 the PPU clock
                 /*++cpuCycles;
                 if (cpuCycles == 3)
@@ -71,6 +79,7 @@ namespace Emu6502
                 Ppu.ScanlineCycle+=3;
                 if (Ppu.ScanlineCycle >= Ppu.ClocksPerScanline)
                 {
+                    Ppu.ScanlineCycle -= Ppu.ClocksPerScanline;
                     Ppu.FinishScanline();
 
                     if (Ppu.VsyncSignalToMainLoop)
@@ -85,10 +94,13 @@ namespace Emu6502
                             sw.Start();
                             frameCount = 0;
                         }
+                        render =true ;
                         break;
                     }
                 }
             }
+
+            return cpuCycles;
         }
     }
 }

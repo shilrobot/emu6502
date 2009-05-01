@@ -67,6 +67,20 @@ namespace Emu6502
                 case 0x4000:
                 case 0x5000:
                     {
+                        
+                        if (addr == 0x4016)
+                        {
+                            byte result = (byte)(nes.Controller1.Captured & 0x1);
+                            nes.Controller1.Captured >>= 1;
+                            return result;
+                        }
+                        else if (addr == 0x4017)
+                        {
+                            byte result = (byte)(nes.Controller2.Captured & 0x1);
+                            nes.Controller2.Captured >>= 1;
+                            return result;
+                        }
+
                         /*if (addr < 0x4020)
                         {
                             //Console.WriteLine("R IO ${0:X4}", addr);
@@ -224,6 +238,14 @@ namespace Emu6502
                     {
                         byte b = Read(srcAddr + i);
                         nes.Ppu.SpriteMem[i] = b;
+                    }
+                }
+                else if (addr == 0x4016)
+                {
+                    if ((val & 0x1) != 0)
+                    {
+                        nes.Controller1.Capture();
+                        nes.Controller2.Capture();
                     }
                 }
 

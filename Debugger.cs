@@ -6,6 +6,10 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using System.Diagnostics;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
+using System.Runtime.InteropServices;
 
 namespace Emu6502
 {
@@ -13,6 +17,8 @@ namespace Emu6502
     {
         private Nes nes;
         private PpuOutput outputWindow;
+        private Stopwatch sw = new Stopwatch();
+        private long cpuCycles = 0;
 
         public Debugger(Nes nes)
         {
@@ -22,11 +28,12 @@ namespace Emu6502
             UpdateScreen();
             UpdateTitle();
             Application.Idle += new EventHandler(Application_Idle);
-            outputWindow = new PpuOutput(nes.Ppu);
+            outputWindow = new PpuOutput(nes);
             outputWindow.Show(this);
             //outputWindow.Hide();
             disassembly2.Nes = nes;
             disassembly2.Update();
+            sw.Start();
         }
 
         private void UpdateTitle()
@@ -37,20 +44,75 @@ namespace Emu6502
                 this.Text = "Debugger [Running]";
         }
 
+        
+        private static bool AppStillIdle() {
+            pkMessage msg;
+            return !PeekMessage(out msg, IntPtr.Zero, 0, 0, 0);
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct pkMessage {
+            public IntPtr hWnd;
+            public Message msg;
+            public IntPtr wParam;
+            public IntPtr lParam;
+            public uint time;
+            public System.Drawing.Point p;
+        }
+
+        [System.Security.SuppressUnmanagedCodeSecurity] // We won't use this maliciously
+        [DllImport("User32.dll", CharSet = CharSet.Auto)]
+        public static extern bool PeekMessage(out pkMessage msg, IntPtr hWnd, uint messageFilterMin, uint messageFilterMax, uint flags);
+
+        
         void Application_Idle(object sender, EventArgs e)
         {
-            if (!nes.Cpu.Paused)
+            while(AppStillIdle())
             {
-                nes.Run();
+                if(nes.Cpu.Paused)
+                    return;
+
+                const float deadZone = 0.3f;
+                GamePadState state = GamePad.GetState(PlayerIndex.One);
+                nes.Controller1.A = state.Buttons.A == (Microsoft.Xna.Framework.Input.ButtonState.Pressed);
+                nes.Controller1.B = state.Buttons.X == (Microsoft.Xna.Framework.Input.ButtonState.Pressed);
+                nes.Controller1.Start = state.Buttons.Start == (Microsoft.Xna.Framework.Input.ButtonState.Pressed);
+                nes.Controller1.Select = state.Buttons.Back == (Microsoft.Xna.Framework.Input.ButtonState.Pressed);
+                nes.Controller1.Left = state.ThumbSticks.Left.X < -deadZone;
+                nes.Controller1.Right = state.ThumbSticks.Left.X > deadZone;
+                nes.Controller1.Up = state.ThumbSticks.Left.Y < -deadZone;
+                nes.Controller1.Down = state.ThumbSticks.Left.Y > deadZone;
+
+                double deltaT = (double)sw.ElapsedTicks / (double)Stopwatch.Frequency;
+                sw.Reset();
+                sw.Start();
+                if(deltaT > 0.1f)
+                    deltaT = 0.1f;
+                double clockRate = 21477272.0 / 12.0;
+                
+                int cycles = (int)Math.Round(clockRate * deltaT);
+                //Console.WriteLine("{0:0} ms = {1} cycles", deltaT * 1000.0, cycles);
+
+                bool render=false;
+                while (!nes.Cpu.Paused && cycles > 0)
+                {
+                    bool tmpRender = false;
+                    cycles = nes.Run(cycles, out tmpRender);
+
+                    if(tmpRender)
+                        render = true;
+                }
 
                 if (nes.Cpu.Paused)
                 {
                     UpdateTitle();
                     UpdateScreen();
                     disassembly2.SelectAddress(nes.Cpu.PC);
+                    return;
                 }
 
-                outputWindow.Invalidate();
+                if(render)
+                    outputWindow.Invalidate();
             }
         }
 

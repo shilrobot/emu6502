@@ -17,7 +17,6 @@ namespace Emu6502
 
         public int[] Framebuffer = new int[ScreenWidth * ScreenHeight];
 
-        public Nes ParentNes { get { return nes; } }
         private Nes nes;
         public byte[] PatternTables;
         public byte[] NameAttributeTables;
@@ -107,6 +106,8 @@ namespace Emu6502
             if (VramAddrLatch != 0)
                 ;// Console.WriteLine("Resetting VRAM latch");
             VramAddrLatch = 0;
+            /*ScrollX = 0;
+            VramAddr = 0;*/
 
             return status;
         }
@@ -169,6 +170,7 @@ namespace Emu6502
         // TODO: Check that this is really correct
         public byte ReadPpuData()
         {
+            byte old = DelayedVramRead;
             DelayedVramRead = Read(VramAddr);
 
             //Console.WriteLine("R VRAM ${0:X4}=${1:X2}", VramAddr, DelayedVramRead);
@@ -178,7 +180,9 @@ namespace Emu6502
             else
                 VramAddr++;
 
-            return DelayedVramRead;
+            VramAddr &= 0x3FFF;
+
+            return old;
         }
 
         public void WritePpuData(byte data)
@@ -193,6 +197,7 @@ namespace Emu6502
                 VramAddr += 0x20;
             else
                 VramAddr++;
+            VramAddr &= 0x3FFF;
         }
 
 
@@ -232,7 +237,25 @@ namespace Emu6502
             else// if(addr >= 0x3F00 && addr < 0x4000)
             {
                 int paletteAddr = addr & 0x1F;
-                Palette[paletteAddr] = val;
+
+                // Zeroth element of every palette entry is mirrored
+                if ((paletteAddr & 0xF) == 0)
+                {
+                    Console.WriteLine("Palette (Mirror) ${0:X2} = ${1:X2}", paletteAddr, val);
+                    Palette[0x00] =
+                    /*Palette[0x04] =
+                    Palette[0x08] =
+                    Palette[0x0c] =*/
+                    Palette[0x10] =
+                    /*Palette[0x14] =
+                    Palette[0x18] =
+                    Palette[0x1c] =*/ val;
+                }
+                else
+                {
+                    Console.WriteLine("Palette ${0:X2} = ${1:X2}", paletteAddr, val);
+                    Palette[paletteAddr] = val;
+                }
             }
         }
 
@@ -247,27 +270,82 @@ namespace Emu6502
                 Console.WriteLine("VSync NMI Ignored");
         }
 
-        private void RenderRow(int row)
+        private void RenderBG(int row)
         {
-            /*if(row == 32)
-                SpriteHitFlag = true;*/
+            int rowStart = ScreenWidth * row;
+            int bgPatternStart = (PpuCtrl & 0x10) != 0 ? 0x1000 : 0x0000;
 
-            int rowStart = ScreenWidth*row;
+            //int nametableStart = 0x2000;
 
-            // Clear BG
-            const int bgcolor = (0xFF << 24) | 0x0000FF;
-            int pos = rowStart;
-            for (int n = ScreenWidth - 1; n >= 0; --n)
-                Framebuffer[pos++] = bgcolor;
+            int tileY = row / 8;
+            int subtileY = row % 8;
+            int fbPos = rowStart;
+            if (tileY >= 0 && tileY < 0x30)
+            {
+                for (int tileX = 0; tileX < 32; ++tileX)
+                {
+                    int attrByteX = tileX / 4;
+                    int attrByteY = tileY / 4;
+                    int attrByteSubX = tileX % 4;
+                    int attrByteSubY = tileY % 4;
+                    int attrAddr = 0x3c0 + attrByteX + attrByteY * 8;
+                    byte attrByte = this.NameAttributeTables[attrAddr];
+                    int nibbleX = (attrByteSubX >> 1) & 0x1;
+                    int nibbleY = (attrByteSubY >> 1) & 0x1;
+                    int shiftAmt = (nibbleY << 2 | nibbleX << 1);
+                    int paletteAddr = ((attrByte >> shiftAmt) & 0x3) * 4;
+                    int palette0 = PpuOutput.Palette[Palette[0] & 0x3f] | 0xFF << 24;
+                    int palette1 = PpuOutput.Palette[Palette[paletteAddr + 1] & 0x3f] | 0xFF << 24;
+                    int palette2 = PpuOutput.Palette[Palette[paletteAddr + 2] & 0x3f] | 0xFF << 24;
+                    int palette3 = PpuOutput.Palette[Palette[paletteAddr + 3] & 0x3f] | 0xFF << 24;
 
-            int spritePatternTableAddr = (PpuCtrl & 0x08)!=0 ? 0x1000 : 0x0000;
+
+                    int pattern = this.NameAttributeTables[tileY * 0x20 + tileX];
+
+                    int patternAddr = bgPatternStart + pattern * 16;
+                    byte b1 = PatternTables[patternAddr + subtileY];
+                    byte b2 = PatternTables[patternAddr + subtileY + 8];
+
+                    for (int subtileX = 0; subtileX < 8; ++subtileX)
+                    {
+                        byte bit1 = (byte)((b1 >> (7 - subtileX)) & 0x1);
+                        byte bit2 = (byte)((b2 >> (7 - subtileX)) & 0x1);
+                        byte result = (byte)(bit2 << 1 | bit1);
+
+                        if (result == 3)
+                            Framebuffer[fbPos] = palette3;
+                        else if (result == 2)
+                            Framebuffer[fbPos] = palette2;
+                        else if (result == 1)
+                            Framebuffer[fbPos] = palette1;
+                        else
+                            Framebuffer[fbPos] = palette0;
+
+                        fbPos++;
+                    }
+                }
+            }
+        }
+
+        private void RenderSprites(int row, bool priority)
+        {
+            int rowStart = ScreenWidth * row;
 
             // TODO: Sprite-BG tests...
 
+            int spritePatternTableAddr = (PpuCtrl & 0x08) != 0 ? 0x1000 : 0x0000;
+
+            // Render sprites
             int offset = 0;
             for (int i = 0; i < 64; ++i)
             {
                 int y = SpriteMem[offset++];
+                if (y >= 0xEE)
+                {
+                    offset += 3;
+                    continue;
+                }
+                y += 1;
                 int cy = row - y;
 
                 if (cy < 0 || cy >= 8)
@@ -278,11 +356,17 @@ namespace Emu6502
 
                 byte B1 = SpriteMem[offset++];
                 byte B2 = SpriteMem[offset++];
+                bool spritePriority = (B2 & 0x20) != 0;
                 int x = SpriteMem[offset++];
+
+                if (spritePriority != priority)
+                {
+                    continue;
+                }
 
                 int palette = (B2 & 0x3);
                 int paletteAddr = 0x10 + palette * 4;
-                int palette1 = PpuOutput.Palette[Palette[paletteAddr + 1] & 0x3f] | 0xFF<<24;
+                int palette1 = PpuOutput.Palette[Palette[paletteAddr + 1] & 0x3f] | 0xFF << 24;
                 int palette2 = PpuOutput.Palette[Palette[paletteAddr + 2] & 0x3f] | 0xFF << 24;
                 int palette3 = PpuOutput.Palette[Palette[paletteAddr + 3] & 0x3f] | 0xFF << 24;
                 int patternAddr = spritePatternTableAddr + B1 * 16;
@@ -298,7 +382,7 @@ namespace Emu6502
                 byte b1 = PatternTables[patternAddr + cy];
                 byte b2 = PatternTables[patternAddr + cy + 8];
 
-                for (int n=0; n<8; ++n)
+                for (int n = 0; n < 8; ++n)
                 {
                     if (x + cx >= 0 && x + cx < ScreenWidth)
                     {
@@ -317,7 +401,16 @@ namespace Emu6502
                     }
                 }
             }
+        }
 
+        private void RenderRow(int row)
+        {
+            /*if(row == 32)
+                SpriteHitFlag = true;*/
+
+            RenderSprites(row, true);
+            RenderBG(row);
+            RenderSprites(row, false);
         }
 
         public void FinishScanline()
@@ -332,7 +425,7 @@ namespace Emu6502
                 if (row == 32)
                     SpriteHitFlag = true;
                 ++ScanlineIndex;
-                ScanlineCycle = 0;
+                //ScanlineCycle = 0;
 
                 if (ScanlineIndex >= Scanlines)
                 {
@@ -344,10 +437,10 @@ namespace Emu6502
 
         }
 
-        private void ShowFrame()
+        /*private void ShowFrame()
         {
-            PpuOutput output = new PpuOutput(this);
+            PpuOutput output = new PpuOutput();
             output.ShowDialog();
-        }
+        }*/
     }
 }

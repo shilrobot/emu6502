@@ -88,15 +88,17 @@ namespace Emu6502
             0x000000,
         };
 
+        private Nes nes;
         private Ppu ppu;
         private Bitmap bmp = new Bitmap(Ppu.ScreenWidth, Ppu.ScreenHeight);
 
-        public PpuOutput(Ppu ppu)
+        public PpuOutput(Nes nes)
         {
             InitializeComponent();
             this.DoubleBuffered = true;
             this.ClientSize = new Size(Ppu.ScreenWidth, Ppu.ScreenHeight);
-            this.ppu = ppu;
+            this.ppu = nes.Ppu;
+            this.nes = nes;
         }
 
         private Bitmap GetPattern(int addr, int paletteAddr)
@@ -153,11 +155,79 @@ namespace Emu6502
             //base.OnPaintBackground(e);
         }
 
+        /*
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            switch (e.KeyCode & Keys.KeyCode)
+            {
+                case Keys.Z:
+                    nes.Controller1.A = true;
+                    break;
+                case Keys.X:
+                    nes.Controller1.B = true;
+                    break;
+                case Keys.Return:
+                    nes.Controller1.Select = true;
+                    break;
+                case Keys.Space:
+                    nes.Controller1.Start = true;
+                    break;
+                case Keys.Left:
+                    nes.Controller1.Left = true;
+                    break;
+                case Keys.Right:
+                    nes.Controller1.Right = true;
+                    break;
+                case Keys.Up:
+                    nes.Controller1.Up = true;
+                    break;
+                case Keys.Down:
+                    nes.Controller1.Down = true;
+                    break;
+            }
+
+            base.OnKeyDown(e);
+        }
+
+        protected override void OnKeyUp(KeyEventArgs e)
+        {
+            switch (e.KeyCode & Keys.KeyCode)
+            {
+                case Keys.Z:
+                    nes.Controller1.A = false;
+                    break;
+                case Keys.X:
+                    nes.Controller1.B = false;
+                    break;
+                case Keys.Return:
+                    nes.Controller1.Select = false;
+                    break;
+                case Keys.Space:
+                    nes.Controller1.Start = false;
+                    break;
+                case Keys.Left:
+                    nes.Controller1.Left = false;
+                    break;
+                case Keys.Right:
+                    nes.Controller1.Right = false;
+                    break;
+                case Keys.Up:
+                    nes.Controller1.Up = false;
+                    break;
+                case Keys.Down:
+                    nes.Controller1.Down = false;
+                    break;
+            }
+
+            base.OnKeyUp(e);
+        }
+         * */
+
         private unsafe void PpuOutput_Paint(object sender, PaintEventArgs e)
         {
             // TODO: Now we have to actually make this fancy so we can see what the shit is going on.
 
-            /*int baseNametableAddr = 0;
+            int baseNametableAddr = 0;
             if ((ppu.PpuCtrl & 0x3) == 0)
                 baseNametableAddr = 0x2000;
             else if ((ppu.PpuCtrl & 0x3) == 1)
@@ -167,7 +237,7 @@ namespace Emu6502
             else // 3
                 baseNametableAddr = 0x2C00;
 
-            int spritePatternTableAddr = 0x0000;
+            /*int spritePatternTableAddr = 0x0000;
             if ((ppu.PpuCtrl & 0x08) != 0)
                 spritePatternTableAddr = 0x1000;
 
@@ -197,7 +267,7 @@ namespace Emu6502
             bmp.UnlockBits(data);
             g.DrawImageUnscaledAndClipped(bmp, new Rectangle(0, 0, ClientSize.Width, ClientSize.Height));
 
-            String hud = String.Format("FPS {0:0.0}", ppu.ParentNes.FPS);
+            String hud = String.Format("FPS {0:0.0}", nes.FPS);
             g.DrawString(hud, new Font("Courier New", 8), new SolidBrush(Color.White), 0, 0);
 
 #if false
@@ -241,10 +311,10 @@ namespace Emu6502
             bool EightBySixteen = (ppu.PpuCtrl & 0x20) != 0;
             bool HighBank8x8 = (ppu.PpuCtrl & 0x08) != 0;
             */
-
-            DrawNameTable(g, baseNametableAddr, -ppu.ScrollX, -ppu.ScrollY);
-            DrawNameTable(g, baseNametableAddr == 0x2000 ? 0x2400 : 0x2000, -ppu.ScrollX + 256, -ppu.ScrollY);
 #endif
+
+            /*DrawNameTable(g, baseNametableAddr, -ppu.ScrollX, -ppu.ScrollY);
+            DrawNameTable(g, baseNametableAddr == 0x2000 ? 0x2400 : 0x2000, -ppu.ScrollX + 256, -ppu.ScrollY);*/
             /*for (int i = 0; i < 64; ++i)
             {
                 byte B0 = ppu.SpriteMem[i * 4 + 0];
@@ -272,7 +342,7 @@ namespace Emu6502
             int ty = 0;
             for (int i = 0; i < 32; ++i)
             {
-                byte palIdx = ppu.Read(0x3f00 + i);
+                byte palIdx = ppu.Palette[i];//;.Read(0x3f00 + i);
                 Color c = Color.FromArgb((int)(0xFF000000 | Palette[palIdx]));
                 Rectangle r = new Rectangle(tx * 16, ty * 16, 16, 16);
                 g.FillRectangle(new SolidBrush(c), r);
@@ -283,7 +353,7 @@ namespace Emu6502
                     ty++;
                 }
             }*/
-
+            
 
             /*int x = 0, y = 0;
             for (int addr=0; addr < 0x2000; addr += 16)
