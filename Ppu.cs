@@ -23,6 +23,7 @@ namespace Emu6502
         public int VramAddrLatch;
         public ushort VramAddr;
         public byte DelayedVramRead;
+        public bool VsyncSignalToMainLoop = false;
 
         public int VsyncTimer;
 
@@ -141,6 +142,7 @@ namespace Emu6502
             VramAddrLatch = 0;
             VramAddr = 0;
             DelayedVramRead = 0;
+            VsyncSignalToMainLoop = false;
 
             // TODO: This is mapper's job
             PatternTables = nes.Rom.ChrRomBanks[0];
@@ -196,11 +198,12 @@ namespace Emu6502
             {
                 VsyncTimer = 0;
                 VsyncFlag = true;
+                VsyncSignalToMainLoop = true;
                 if ((PpuCtrl & 0x80) != 0)
                     nes.Cpu.NMI();
                 else
                     Console.WriteLine("VSync NMI Ignored");
-                ShowFrame();
+                //ShowFrame();
             }
         }
 

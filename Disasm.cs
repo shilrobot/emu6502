@@ -46,12 +46,12 @@ namespace Emu6502
             return sb.ToString();
         }
 
-        private static void DB(StringBuilder sb, int addr, byte b)
+        public static void DB(StringBuilder sb, int addr, byte b)
         {
             sb.AppendFormat("{0:X4}   {1:X2}         .DB ${1:X2}\r\n", addr, b);
         }
 
-        private static bool DisassembleOne(IMemory mem, int addr, int count, StringBuilder sb, out int bytesConsumed)
+        public static bool DisassembleOne(IMemory mem, int addr, int count, StringBuilder sb, out int bytesConsumed)
         {
             bytesConsumed = 0;
 

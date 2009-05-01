@@ -12,10 +12,15 @@ namespace Emu6502
         public const ushort ResetAddr   = 0xFFFC;
         public const ushort IRQAddr     = 0xFFFE;
 
+        public bool Paused = false;
+        public bool SingleStep = false;
+
         public byte A; // Accumulator
         public byte X; // X registr
         public byte Y; // Y register
         public ushort PC; // Current instruction address
+
+        public Dictionary<ushort, bool> Breakpoints = new Dictionary<ushort, bool>();
 
         // Status flags
         // Note: D (BCD arithmetic flag) is not implemented by NES
@@ -44,12 +49,12 @@ namespace Emu6502
         {
             A = X = Y = 0;
             // Load PC from reset vector
-            PC = ReadWord(ResetAddr);
             // Z flag apparently is set after reset
             C = I = V = N = false;
             Z = true;
             SP = 0xFF;
             ignoreOpcodes = 0;
+            SetPC(ReadWord(ResetAddr));
             Console.WriteLine("6502 Reset -> Jump to ${0:X4}", PC);
         }
 
@@ -59,7 +64,7 @@ namespace Emu6502
             PushWord(PC);
             PushStatus(false);
             I = true;
-            PC = ReadWord(NMIAddr);
+            SetPC(ReadWord(NMIAddr));
             Console.WriteLine("6502 NMI -> Jump to ${0:X4}", PC);
         }
 
@@ -70,7 +75,7 @@ namespace Emu6502
                 PushWord(PC);
                 PushStatus(false);
                 I = true;
-                PC = ReadWord(IRQAddr);
+                SetPC(ReadWord(IRQAddr));
                 Console.WriteLine("6502 IRQ -> Jump to ${0:X4}", PC);
             }
             else
@@ -136,6 +141,16 @@ namespace Emu6502
             I = (status & 0x04) != 0;
             Z = (status & 0x02) != 0;
             C = (status & 0x01) != 0;
+        }
+
+        public void SetPC(ushort newPC)
+        {
+            PC = newPC;
+            if (Breakpoints.ContainsKey(PC) || SingleStep)
+            {
+                Paused = true;
+                SingleStep = false;
+            }
         }
 
         // TODO: Cycle-accurate counters, etc.

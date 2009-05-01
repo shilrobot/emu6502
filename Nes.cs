@@ -34,8 +34,11 @@ namespace Emu6502
             Ppu.Reset();
         }
 
-        public void Tick()
+        public bool Tick()
         {
+            if (Cpu.Paused)
+                return false;
+
             // TODO: Cycle-accurate CPU simulator
             ++cpuCycles;
             if (cpuCycles == 3)
@@ -44,8 +47,23 @@ namespace Emu6502
                 Cpu.Tick();
             }
 
+            if (Cpu.Paused)
+                return false;
+
             Ppu.Tick();
+
+            if (Ppu.VsyncSignalToMainLoop)
+            {
+                Ppu.VsyncSignalToMainLoop = false;
+                return false;
+            }
+
+            return true;
         }
 
+        public void Run()
+        {
+            while (Tick()) ;
+        }
     }
 }

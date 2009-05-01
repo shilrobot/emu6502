@@ -57,11 +57,23 @@
       <DependentUpon>Debugger.cs</DependentUpon>
     </Compile>
     <Compile Include="Disasm.cs" />
+    <Compile Include="DisassemblyWindow.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="DisassemblyWindow.Designer.cs">
+      <DependentUpon>DisassemblyWindow.cs</DependentUpon>
+    </Compile>
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Breakpoints.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Breakpoints.Designer.cs">
+      <DependentUpon>Breakpoints.cs</DependentUpon>
     </Compile>
     <Compile Include="IMemory.cs" />
     <Compile Include="Nes.cs" />
@@ -80,6 +92,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Breakpoints.resx">
+      <DependentUpon>Breakpoints.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="PpuOutput.resx">
       <DependentUpon>PpuOutput.cs</DependentUpon>

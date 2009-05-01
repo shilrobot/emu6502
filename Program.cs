@@ -23,7 +23,9 @@ namespace Emu6502
             Rom r2 = new Rom("Roms/Castlevania (E).nes");*/
 
             Nes nes = new Nes("Roms/Super Mario Bros. (E).nes");
+            nes.Cpu.Paused = true;
 
+#if false
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             sw.Start();
             int max = 500000;
@@ -38,6 +40,7 @@ namespace Emu6502
             sw.Stop();
             double secs = (double)sw.ElapsedTicks / (double)System.Diagnostics.Stopwatch.Frequency;
             Console.WriteLine("PPU Speed: {0:0.00} MHz", (max / secs) / 1.0e6);
+#endif
 
             Application.Run(new Debugger(nes));
 

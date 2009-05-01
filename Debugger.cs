@@ -12,6 +12,7 @@ namespace Emu6502
     public partial class Debugger : Form
     {
         private Nes nes;
+        private PpuOutput outputWindow;
 
         public Debugger(Nes nes)
         {
@@ -19,6 +20,37 @@ namespace Emu6502
             this.nes = nes;
 
             UpdateScreen();
+            UpdateTitle();
+            Application.Idle += new EventHandler(Application_Idle);
+            outputWindow = new PpuOutput(nes.Ppu);
+            outputWindow.Show(this);
+            outputWindow.Hide();
+            disassembly2.Nes = nes;
+            disassembly2.Update();
+        }
+
+        private void UpdateTitle()
+        {
+            if (nes.Cpu.Paused)
+                this.Text = "Debugger [Paused]";
+            else
+                this.Text = "Debugger [Running]";
+        }
+
+        void Application_Idle(object sender, EventArgs e)
+        {
+            if (!nes.Cpu.Paused)
+            {
+                nes.Run();
+
+                if (nes.Cpu.Paused)
+                {
+                    UpdateTitle();
+                    UpdateScreen();
+                }
+
+                outputWindow.Invalidate();
+            }
         }
 
         private string DecodeReg(string name, byte value)
@@ -52,8 +84,9 @@ namespace Emu6502
             vFlag.Checked = nes.Cpu.V;
             nFlag.Checked = nes.Cpu.N;
 
-            string dis = Disassembler.Disassemble(nes.Mem, nes.Cpu.PC, 128);
-            disassembly.Text = dis;
+            //string dis = Disassembler.Disassemble(nes.Mem, nes.Cpu.PC - 16, 128);
+            //disassembly.Text = dis;
+            disassembly2.Invalidate();
         }
 
         private void fileExit_Click(object sender, EventArgs e)
@@ -63,8 +96,9 @@ namespace Emu6502
 
         private void debugStepOver_Click(object sender, EventArgs e)
         {
-            nes.Cpu.Tick();
-            UpdateScreen();
+            nes.Cpu.SingleStep = true;
+            nes.Cpu.Paused = false;
+            UpdateTitle();
         }
 
         private void nFlag_CheckedChanged(object sender, EventArgs e)
@@ -95,19 +129,44 @@ namespace Emu6502
         private void interruptReset_Click(object sender, EventArgs e)
         {
             nes.Reset();
+            nes.Cpu.Paused = true;
             UpdateScreen();
+            UpdateTitle();
         }
 
         private void interruptNMI_Click(object sender, EventArgs e)
         {
             nes.Cpu.NMI();
+            nes.Cpu.Paused = true;
             UpdateScreen();
+            UpdateTitle();
         }
 
         private void interruptIRQ_Click(object sender, EventArgs e)
         {
             nes.Cpu.IRQ();
+            nes.Cpu.Paused = true;
             UpdateScreen();
+            UpdateTitle();
+        }
+
+        private void debugGo_Click(object sender, EventArgs e)
+        {
+            if (nes.Cpu.Paused)
+                nes.Cpu.Paused = false;
+            else
+            {
+                nes.Cpu.Paused = true;
+                UpdateScreen();
+            }
+
+            UpdateTitle();
+        }
+
+        private void debugBreakpoints_Click(object sender, EventArgs e)
+        {
+            Breakpoints bp = new Breakpoints(nes);
+            bp.ShowDialog();
         }
     }
 }

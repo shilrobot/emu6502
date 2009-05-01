@@ -9,6 +9,9 @@ namespace Emu6502
     {
         public void Tick()
         {
+            if (Paused)
+                return;
+
             ushort NPC;
             ushort addr;
             byte data;
@@ -1238,17 +1241,20 @@ break;
 /* END SWITCH */
                 default:
                     NPC = (ushort)(PC + 1);
-                    if (ignoreOpcodes < 10)
+                    /*if (ignoreOpcodes < 10)
                     {
                         Console.WriteLine("Invalid Opcode ${0:X2} @ ${1:X4}: treating as NOP", opcode, PC);
                         ++ignoreOpcodes;
                         if (ignoreOpcodes == 10)
                             Console.WriteLine("Suppressing further invalid opcode messages");
-                    }
+                    }*/
+                    Console.WriteLine("Invalid Opcode ${0:X2} @ ${1:X4}: treating as NOP", opcode, PC);
+                    this.Paused = true;
+
                     break;
             }
 
-            PC = NPC;
+            SetPC(NPC);
         }
     }
 }
