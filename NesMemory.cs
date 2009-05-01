@@ -212,13 +212,13 @@ namespace Emu6502
             }
             else if (addr < 0x4020)
             {
-                Console.WriteLine("W IO ${0:X4} = ${1:X2}", addr, val);
+                //Console.WriteLine("W IO ${0:X4} = ${1:X2}", addr, val);
 
                 // Fake DMA
                 if (addr == 0x4014)
                 {
                     ushort srcAddr = (ushort)(val * 0x100);
-                    Console.WriteLine("DMAing ${0:X4} to OAM memory", srcAddr);
+                    //Console.WriteLine("DMAing ${0:X4} to OAM memory", srcAddr);
                     // TODO: LOL, potential explosion
                     for (int i = 0; i < 256; ++i)
                     {
@@ -231,16 +231,16 @@ namespace Emu6502
             }
             else if (addr < 0x6000)
             {
-                Console.WriteLine(" -> Expansion ROM ${0:X4} = ${0:X2}", addr, val);
+                //Console.WriteLine(" -> Expansion ROM ${0:X4} = ${0:X2}", addr, val);
             }
             else if (addr < 0x8000)
             {
-                Console.WriteLine(" -> Save RAM ${0:X4} = ${0:X2}", addr, val);
+                //Console.WriteLine(" -> Save RAM ${0:X4} = ${0:X2}", addr, val);
                 // TODO
             }
             else
             {
-                Console.WriteLine(" -> PRG-ROM ${0:X4} = ${0:X2}", addr, val);
+                //Console.WriteLine(" -> PRG-ROM ${0:X4} = ${0:X2}", addr, val);
             }
         }
     }

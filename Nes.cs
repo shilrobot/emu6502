@@ -46,13 +46,16 @@ namespace Emu6502
 
         public void Run()
         {
-            while (!Cpu.Paused)
+            if (Cpu.Paused)
+                return;
+
+            while (true)
             {
                 // CPU clock is 1/3 the PPU clock
-                ++cpuCycles;
+                /*++cpuCycles;
                 if (cpuCycles == 3)
                 {
-                    cpuCycles = 0;
+                    cpuCycles = 0;*/
 
                     if (Cpu.WaitCycles > 0)
                         Cpu.WaitCycles--;
@@ -63,25 +66,27 @@ namespace Emu6502
                         if (Cpu.Paused)
                             break;
                     }
-                }
+                //}
 
-                ++Ppu.ScanlineCycle;
+                Ppu.ScanlineCycle+=3;
                 if (Ppu.ScanlineCycle >= Ppu.ClocksPerScanline)
+                {
                     Ppu.FinishScanline();
 
-                if (Ppu.VsyncSignalToMainLoop)
-                {
-                    Ppu.VsyncSignalToMainLoop = false;
-                    ++frameCount;
-                    if (frameCount == 10)
+                    if (Ppu.VsyncSignalToMainLoop)
                     {
-                        float secs = sw.ElapsedTicks / (float)Stopwatch.Frequency;
-                        FPS = frameCount / secs;
-                        sw.Reset();
-                        sw.Start();
-                        frameCount = 0;
+                        Ppu.VsyncSignalToMainLoop = false;
+                        ++frameCount;
+                        if (frameCount == 10)
+                        {
+                            float secs = sw.ElapsedTicks / (float)Stopwatch.Frequency;
+                            FPS = frameCount / secs;
+                            sw.Reset();
+                            sw.Start();
+                            frameCount = 0;
+                        }
+                        break;
                     }
-                    break;
                 }
             }
         }

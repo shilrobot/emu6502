@@ -59,7 +59,7 @@ namespace Emu6502
             SP = 0xFF;
             ignoreOpcodes = 0;
             SetPC(ReadWord(ResetAddr));
-            Console.WriteLine("6502 Reset -> Jump to ${0:X4}", PC);
+            //Console.WriteLine("6502 Reset -> Jump to ${0:X4}", PC);
         }
 
         // In practice this is connected to the vertical retrace from the PPU
@@ -69,7 +69,7 @@ namespace Emu6502
             PushStatus(false);
             I = true;
             SetPC(ReadWord(NMIAddr));
-            Console.WriteLine("6502 NMI -> Jump to ${0:X4}", PC);
+            //Console.WriteLine("6502 NMI -> Jump to ${0:X4}", PC);
         }
 
         public void IRQ()
@@ -80,10 +80,10 @@ namespace Emu6502
                 PushStatus(false);
                 I = true;
                 SetPC(ReadWord(IRQAddr));
-                Console.WriteLine("6502 IRQ -> Jump to ${0:X4}", PC);
+                //Console.WriteLine("6502 IRQ -> Jump to ${0:X4}", PC);
             }
             else
-                Console.WriteLine("6502 IRQ (Ignored)");
+                ;// Console.WriteLine("6502 IRQ (Ignored)");
         }
 
         private byte Read(int addr)
@@ -104,8 +104,8 @@ namespace Emu6502
         private void Push(byte val)
         {
             Write(0x100 + (SP--), val);
-            if (SP == 0xFF)
-                Console.WriteLine("Stack Wraparound on Push");
+            /*if (SP == 0xFF)
+                 Console.WriteLine("Stack Wraparound on Push");*/
         }
 
         private void PushWord(ushort val)
@@ -124,19 +124,19 @@ namespace Emu6502
         private byte Pull()
         {
             return Read(0x100 + (++SP));
-            if (SP == 0x00)
-                Console.WriteLine("Stack Wraparound on Pull");
+            /*if (SP == 0x00)
+                Console.WriteLine("Stack Wraparound on Pull");*/
         }
 
         private void PushStatus(bool brk)
         {
-            Console.WriteLine("Pushed Status: N={0} V={1} I={2} Z={3} C={4} B={5}",
+            /*Console.WriteLine("Pushed Status: N={0} V={1} I={2} Z={3} C={4} B={5}",
                 N ? 1 : 0,
                 V ? 1 : 0,
                 I ? 1 : 0,
                 Z ? 1 : 0,
                 C ? 1 : 0,
-                brk ? 1 : 0);
+                brk ? 1 : 0);*/
 
             // Bit 5 is always set, bit 3 (D) is always zero
             byte status = (byte)((N ? 0x80 : 0x00) |
@@ -157,12 +157,12 @@ namespace Emu6502
             I = (status & 0x04) != 0;
             Z = (status & 0x02) != 0;
             C = (status & 0x01) != 0;
-            Console.WriteLine("Pulled Status: N={0} V={1} I={2} Z={3} C={4}",
+            /*Console.WriteLine("Pulled Status: N={0} V={1} I={2} Z={3} C={4}",
                 N ? 1 : 0,
                 V ? 1 : 0,
                 I ? 1 : 0,
                 Z ? 1 : 0,
-                C ? 1 : 0);
+                C ? 1 : 0);*/
         }
 
         public void SetPC(ushort newPC)

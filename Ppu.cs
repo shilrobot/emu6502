@@ -73,14 +73,14 @@ namespace Emu6502
         // $2000 PPUCTRL (W)
         public void WritePpuCtrl(byte val)
         {
-            Console.WriteLine("PPUCTRL = ${0:X2}", val);
+            //Console.WriteLine("PPUCTRL = ${0:X2}", val);
             PpuCtrl = val;
         }
         
         // $2001 PPUMASK (W)
         public void WritePpuMask(byte val)
         {
-            Console.WriteLine("PPUMASK = ${0:X2}", val);
+            //Console.WriteLine("PPUMASK = ${0:X2}", val);
             PpuMask = val;
         }
 
@@ -92,7 +92,7 @@ namespace Emu6502
             byte status = 0;
             if (VsyncFlag)
             {
-                Console.WriteLine("PPUSTATUS read returned VSync flag");
+                ;// Console.WriteLine("PPUSTATUS read returned VSync flag");
                 status |= 0x80;
             }
 
@@ -102,10 +102,10 @@ namespace Emu6502
             VsyncFlag = false;
 
             if (ScrollLatch != 0)
-                Console.WriteLine("Resetting SCROLL latch");
+                ;// Console.WriteLine("Resetting SCROLL latch");
             ScrollLatch = 0;
             if (VramAddrLatch != 0)
-                Console.WriteLine("Resetting VRAM latch");
+                ;// Console.WriteLine("Resetting VRAM latch");
             VramAddrLatch = 0;
 
             return status;
@@ -114,7 +114,7 @@ namespace Emu6502
         // $2003 OAMADDR (W)
         public void WriteOAMAddr(byte val)
         {
-            Console.WriteLine("OAMADDR = ${0:X2}", val);
+            //Console.WriteLine("OAMADDR = ${0:X2}", val);
             OAMAddr = val;
         }
 
@@ -128,15 +128,15 @@ namespace Emu6502
             if (ScrollLatch == 0)
             {
                 ScrollX = val;
-                Console.WriteLine("SCROLLX = ${0:X2}", val);
+                //Console.WriteLine("SCROLLX = ${0:X2}", val);
             }
             else if (ScrollLatch == 1)
             {
                 ScrollY = val;
-                Console.WriteLine("SCROLLY = ${0:X2}", val);
+                //Console.WriteLine("SCROLLY = ${0:X2}", val);
             }
             else
-                Console.WriteLine("Excess scroll x/y latch ${0:X2}", val);
+                ;// Console.WriteLine("Excess scroll x/y latch ${0:X2}", val);
 
             ++ScrollLatch;
         }
@@ -147,7 +147,7 @@ namespace Emu6502
             VramAddr <<= 8;
             VramAddr |= val;
 
-            Console.WriteLine("Latched PPU address: ${0:X4}", VramAddr);
+            //Console.WriteLine("Latched PPU address: ${0:X4}", VramAddr);
             /*if (VramAddrLatch == 0)
             {
                 VramAddr = val;
@@ -186,8 +186,8 @@ namespace Emu6502
             //nes.Cpu.Paused = true;
             Write(VramAddr, data);
 
-            if(data != 0x00 && data != 0x24)
-                Console.WriteLine("W VRAM ${0:X4}=${1:X2}", VramAddr, data);
+            /*if(data != 0x00 && data != 0x24)
+                Console.WriteLine("W VRAM ${0:X4}=${1:X2}", VramAddr, data);*/
 
             if ((PpuCtrl & 0x04) != 0)
                 VramAddr += 0x20;
