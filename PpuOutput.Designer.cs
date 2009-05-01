@@ -35,8 +35,9 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(546, 403);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Name = "PpuOutput";
-            this.Text = "PpuOutput";
+            this.Text = "NESbert";
             this.Paint += new System.Windows.Forms.PaintEventHandler(this.PpuOutput_Paint);
             this.ResumeLayout(false);
 

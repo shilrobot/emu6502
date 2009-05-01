@@ -42,7 +42,8 @@ namespace Emu6502
 
             // TODO: Cycle-accurate CPU simulator
             ++cpuCycles;
-            if (cpuCycles == 3)
+            //if (cpuCycles == 3)
+            if(cpuCycles == 3*3) // Hack hack - until we get better timings
             {
                 cpuCycles = 0;
                 Cpu.Tick();
@@ -56,8 +57,8 @@ namespace Emu6502
             if (Ppu.VsyncSignalToMainLoop)
             {
                 Ppu.VsyncSignalToMainLoop = false;
-                /*++frameDivider;
-                if (frameDivider == 5)
+                //++frameDivider;
+                /*if (frameDivider == 10)
                 {
                     frameDivider = 0;
                     return false;

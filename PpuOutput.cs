@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
@@ -11,16 +12,93 @@ namespace Emu6502
 {
     public partial class PpuOutput : Form
     {
+        public static int[] Palette = new int[]
+        {
+            // 0x00
+            0x757575,
+            0x271b8f,
+            0x0000ab,
+            0x47009f,
+            0x8f0077,
+            0xab0013,
+            0xa70000,
+            0x7f0b00,
+            0x432f00,
+            0x004700,
+            0x004100,
+            0x003f17,
+            0x1b3f5f,
+            0x000000,
+            0x000000,
+            0x000000,
+
+            // 0x10
+            0xbcbcbc,
+            0x0073ef,
+            0x233bef,
+            0x8300f3,
+            0xbf00bf,
+            0xe7005b,
+            0xdb2b00,
+            0xcb4f0f,
+            0x8b7300,
+            0x009700,
+            0x00ab00,
+            0x00933b,
+            0x00838b,
+            0x000000,
+            0x000000,
+            0x000000,
+
+            // 0x20
+            0xffffff,
+            0x3fbfff,
+            0x5f97ff,
+            0xa78bfd,
+            0xf77bff,
+            0xff77b7,
+            0xff7763,
+            0xff9b3b,
+            0xf3bf3f,
+            0x83d313,
+            0x4fdf4b,
+            0x58f898,
+            0x00ebdb,
+            0x000000,
+            0x000000,
+            0x000000,
+
+            // 0x30
+            0xffffff,
+            0xabe7ff,
+            0xc7d7ff,
+            0xd7cbff,
+            0xffc7ff,
+            0xffc7db,
+            0xffbfb3,
+            0xffdbab,
+            0xffe7a3,
+            0xe3ffa3,
+            0xabf3bf,
+            0xb3ffcf,
+            0x9ffff3,
+            0x000000,
+            0x000000,
+            0x000000,
+        };
+
         private Ppu ppu;
+        private Bitmap bmp = new Bitmap(Ppu.ScreenWidth, Ppu.ScreenHeight);
 
         public PpuOutput(Ppu ppu)
         {
             InitializeComponent();
             this.DoubleBuffered = true;
+            this.ClientSize = new Size(Ppu.ScreenWidth, Ppu.ScreenHeight);
             this.ppu = ppu;
         }
 
-        private Bitmap GetPattern(int addr)
+        private Bitmap GetPattern(int addr, int paletteAddr)
         {
             Bitmap bmp = new Bitmap(8, 8);
 
@@ -32,7 +110,7 @@ namespace Emu6502
                     byte bit1 = (byte)((b1 >> (7 - x)) & 0x1);
                     byte bit2 = (byte)((b2 >> (7 - x)) & 0x1);
                     byte result = (byte)(bit2 << 1 | bit1);
-                    byte intensity;
+                    /*byte intensity;
                     if (result == 3)
                         intensity = 255;
                     else if (result == 2)
@@ -45,7 +123,14 @@ namespace Emu6502
                     if (result == 0)
                         bmp.SetPixel(x, y, Color.FromArgb(0,0,0,0));
                     else
-                        bmp.SetPixel(x, y, Color.FromArgb(intensity, intensity, intensity));
+                        bmp.SetPixel(x, y, Color.FromArgb(intensity, intensity, intensity));*/
+                    if (result == 0)
+                        bmp.SetPixel(x, y, Color.FromArgb(0, 0, 0, 0));
+                    else
+                    {
+                        int paletteEntry = ppu.Read(paletteAddr + result)%64; // todo: bits
+                        bmp.SetPixel(x, y, Color.FromArgb(0xFF << 24 | Palette[paletteEntry]));
+                    }
                 }
 
             return bmp;
@@ -56,13 +141,13 @@ namespace Emu6502
             for(int y=0; y<30; ++y)
                 for (int x = 0; x < 32; ++x)
                 {
-                    byte b = ppu.Read(addr);;
-                    Bitmap chunk = GetPattern(b);
+                    byte b = ppu.Read(addr++);;
+                    Bitmap chunk = GetPattern(0x1000 + b*16, 0x3F00);
                     g.DrawImage(chunk, tx + x*8, ty + y*8);
                 }
         }
 
-        private void PpuOutput_Paint(object sender, PaintEventArgs e)
+        private unsafe void PpuOutput_Paint(object sender, PaintEventArgs e)
         {
             // TODO: Now we have to actually make this fancy so we can see what the shit is going on.
 
@@ -88,10 +173,39 @@ namespace Emu6502
             bool enableSprites = (ppu.PpuMask & 0x10) != 0;
 
             Graphics g = e.Graphics;
-            g.SetClip(new Rectangle(0, 0, 256, 224));
-            g.Clear(Color.Black);
+            //g.SetClip(new Rectangle(0, 0, 256, 262)); // NTSC clipping
+            //g.Clear(Color.Blue);
 
-            /*String hud = String.Format("Base Nametable Addr: ${0:X4}\n"+
+            /*Bitmap bmp = new Bitmap(Ppu.ScreenWidth, Ppu.ScreenHeight);
+            for(int y = 0; y < Ppu.ScreenHeight; ++y)
+                for(int x=0; x<Ppu.ScreenWidth; ++x)
+                    bmp.SetPixel(x,y,Color.FromArgb(ppu.Framebuffer[x + y*Ppu.ScreenWidth]));
+            g.DrawImage(bmp, 0, 0);*/
+
+            BitmapData data = 
+                bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height),
+                                System.Drawing.Imaging.ImageLockMode.WriteOnly,
+                                 System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            int[] fb = ppu.Framebuffer;
+            for (int y = 0; y < Ppu.ScreenHeight; ++y)
+            {
+                //int* scanlineIn = &ppu.Framebuffer[y * Ppu.ScreenWidth];
+                int fbOff = y * Ppu.ScreenWidth;
+                int* scanlineOut = (int*)data.Scan0 + (data.Stride/4) * y;
+                for (int x = 0; x < Ppu.ScreenWidth; ++x)
+                    *(scanlineOut++) = fb[fbOff++];
+            }
+
+            bmp.UnlockBits(data);
+            g.DrawImage(bmp, 0, 0, ClientSize.Width, ClientSize.Height);
+
+            String hud = String.Format("{0:0.00}", ppu.Frame/60.0f);
+            g.DrawString(hud, new Font("Courier New", 8), new SolidBrush(Color.White), 0, 0);
+
+#if false
+
+            String hud = String.Format("Base Nametable Addr: ${0:X4}\n"+
                                         "8x8 Sprite Pat Table Addr: ${1:X4}\n"+
                                         "Sprite Size: {2}\n"+
                                         "Enable BG: {3}\n"+
@@ -106,7 +220,7 @@ namespace Emu6502
                                         ppu.ScrollX,
                                         ppu.ScrollY);
 
-            for (int i = 0; i < 64; ++i)
+            /*for (int i = 0; i < 64; ++i)
             {
                 byte B0 = ppu.SpriteMem[i * 4 + 0];
                 byte B1 = ppu.SpriteMem[i * 4 + 1];
@@ -118,9 +232,8 @@ namespace Emu6502
                 //Bitmap chunk = GetPattern((HighBank8x8 ? 0x1000 : 0x0000) + (B1 * 16));
                 //g.DrawImage(chunk, x, y);
                 hud += String.Format("Spr{0:00} ${1:X2} ${2:X2} ({3},{4})\n", i, B1, B2, B3, B0);
-            }
+            }*/
 
-            g.DrawString(hud, new Font("Courier New", 8), new SolidBrush(Color.White), 0, 0);*/
 
             /*
             Graphics g = e.Graphics;
@@ -132,10 +245,10 @@ namespace Emu6502
             bool HighBank8x8 = (ppu.PpuCtrl & 0x08) != 0;
             */
 
-            //DrawNameTable(g, baseNametableAddr, 0, 0);
-
-            
-            for (int i = 0; i < 64; ++i)
+            DrawNameTable(g, baseNametableAddr, -ppu.ScrollX, -ppu.ScrollY);
+            DrawNameTable(g, baseNametableAddr == 0x2000 ? 0x2400 : 0x2000, -ppu.ScrollX + 256, -ppu.ScrollY);
+#endif
+            /*for (int i = 0; i < 64; ++i)
             {
                 byte B0 = ppu.SpriteMem[i * 4 + 0];
                 byte B1 = ppu.SpriteMem[i * 4 + 1];
@@ -146,15 +259,34 @@ namespace Emu6502
                 int y = B0;
                 if (y >= 0xEF)
                     continue;
+                int palette = (B2 & 0x3);
                 bool flipH = (B2 & 0x40) != 0;
                 bool flipV = (B2 & 0x80) != 0;
-                Bitmap chunk = GetPattern(spritePatternTableAddr + B1 * 16);
+                Bitmap chunk = GetPattern(spritePatternTableAddr + B1 * 16, 0x3F10 + palette*4);
                 if (flipH)
                     chunk.RotateFlip(RotateFlipType.RotateNoneFlipX);
                 if (flipV)
                     chunk.RotateFlip(RotateFlipType.RotateNoneFlipY);
                 g.DrawImage(chunk, x, y);
-            }
+            }*/
+
+
+            /*int tx = 0;
+            int ty = 0;
+            for (int i = 0; i < 32; ++i)
+            {
+                byte palIdx = ppu.Read(0x3f00 + i);
+                Color c = Color.FromArgb((int)(0xFF000000 | Palette[palIdx]));
+                Rectangle r = new Rectangle(tx * 16, ty * 16, 16, 16);
+                g.FillRectangle(new SolidBrush(c), r);
+                tx++;
+                if (tx >= 4)
+                {
+                    tx = 0;
+                    ty++;
+                }
+            }*/
+
 
             /*int x = 0, y = 0;
             for (int addr=0; addr < 0x2000; addr += 16)
@@ -169,6 +301,8 @@ namespace Emu6502
                 }
             }*/
 
+            //g.DrawString(hud, new Font("Courier New", 8), new SolidBrush(Color.White), 0, 0);
+//#endif
             return;
         }
     }

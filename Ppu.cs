@@ -7,6 +7,15 @@ namespace Emu6502
 {
     public class Ppu
     {
+        public const int ScreenWidth = 256;
+        public const int ScreenHeight = 240;
+
+        public const int Scanlines = 262;
+        public const int VsyncScanlines = 20;
+        public const int ClocksPerScanline = 341;
+
+        public int[] Framebuffer = new int[ScreenWidth * ScreenHeight];
+
         private Nes nes;
         public byte[] PatternTables;
         public byte[] NameAttributeTables;
@@ -24,12 +33,41 @@ namespace Emu6502
         public ushort VramAddr;
         public byte DelayedVramRead;
         public bool VsyncSignalToMainLoop = false;
+        public bool SpriteHitFlag;
+        public int Frame;
 
-        public int VsyncTimer;
+        private int ScanlineIndex = 0; // Essentially "Y" counter
+        private int ScanlineCycle = 0; // Essentially "X" counter
 
         public Ppu(Nes nes)
         {
             this.nes = nes;
+        }
+
+        public void Reset()
+        {
+            Framebuffer = new int[ScreenWidth * ScreenHeight];
+            VsyncFlag = false;
+            PpuCtrl = 0x0;
+            PpuMask = 0x0;
+            OAMAddr = 0x0;
+            ScrollLatch = 0;
+            ScrollX = 0;
+            ScrollY = 0;
+            VramAddrLatch = 0;
+            VramAddr = 0;
+            DelayedVramRead = 0;
+            VsyncSignalToMainLoop = false;
+            ScanlineIndex = 0;
+            ScanlineCycle = 0;
+            SpriteHitFlag = false;
+            Frame = 0;
+
+            // TODO: This is mapper's job
+            PatternTables = nes.Rom.ChrRomBanks[0];
+            NameAttributeTables = new byte[4096];
+            Palette = new byte[32];
+            SpriteMem = new byte[256];
         }
 
         // $2000 PPUCTRL (W)
@@ -58,10 +96,7 @@ namespace Emu6502
                 status |= 0x80;
             }
 
-            // temp.
-            //status |= 0x40;
-            int count = (int)(Nes.PpuTicksPerSecond / 60);
-            if (VsyncTimer > count / 4 && VsyncTimer < (count / 2))
+            if (SpriteHitFlag)
                 status |= 0x40;
 
             VsyncFlag = false;
@@ -151,7 +186,8 @@ namespace Emu6502
             //nes.Cpu.Paused = true;
             Write(VramAddr, data);
 
-            //Console.WriteLine("W VRAM ${0:X4}=${1:X2}", VramAddr, data);
+            if(data != 0x00 && data != 0x24)
+                Console.WriteLine("W VRAM ${0:X4}=${1:X2}", VramAddr, data);
 
             if ((PpuCtrl & 0x04) != 0)
                 VramAddr += 0x20;
@@ -159,26 +195,6 @@ namespace Emu6502
                 VramAddr++;
         }
 
-        public void Reset()
-        {
-            VsyncFlag = false;
-            PpuCtrl = 0x0;
-            PpuMask = 0x0;
-            OAMAddr = 0x0;
-            ScrollLatch = 0;
-            ScrollX = 0;
-            ScrollY = 0;
-            VramAddrLatch = 0;
-            VramAddr = 0;
-            DelayedVramRead = 0;
-            VsyncSignalToMainLoop = false;
-
-            // TODO: This is mapper's job
-            PatternTables = nes.Rom.ChrRomBanks[0];
-            NameAttributeTables = new byte[4096];
-            Palette = new byte[32];
-            SpriteMem = new byte[256];
-        }
 
         public byte Read(int addr)
         {
@@ -220,19 +236,109 @@ namespace Emu6502
             }
         }
 
+        private void Vsync()
+        {
+            SpriteHitFlag = false;
+            VsyncFlag = true;
+            VsyncSignalToMainLoop = true;
+            if ((PpuCtrl & 0x80) != 0)
+                nes.Cpu.NMI();
+            else
+                Console.WriteLine("VSync NMI Ignored");
+            ++Frame;
+        }
+
+        private void RenderRow(int row)
+        {
+            /*if(row == 32)
+                SpriteHitFlag = true;*/
+
+            int rowStart = ScreenWidth*row;
+
+            // Clear BG
+            for (int n = 0; n < ScreenWidth; ++n)
+                Framebuffer[rowStart + n] = 0xFF << 24 | 0x0000FF;
+
+            int spritePatternTableAddr = (PpuCtrl & 0x08)!=0 ? 0x1000 : 0x0000;
+
+            // TODO: Sprite-BG tests...
+
+            int offset = 0;
+            for (int i = 0; i < 64; ++i)
+            {
+                int y = SpriteMem[offset++];
+                int cy = row - y;
+
+                if (cy < 0 || cy >= 8)
+                {
+                    offset += 3;
+                    continue;
+                }
+
+                byte B1 = SpriteMem[offset++];
+                byte B2 = SpriteMem[offset++];
+                int x = SpriteMem[offset++];
+
+                int palette = (B2 & 0x3);
+                int paletteAddr = 0x10 + palette * 4;
+                int palette1 = PpuOutput.Palette[Palette[paletteAddr + 1] & 0x3f] | 0xFF<<24;
+                int palette2 = PpuOutput.Palette[Palette[paletteAddr + 2] & 0x3f] | 0xFF << 24;
+                int palette3 = PpuOutput.Palette[Palette[paletteAddr + 3] & 0x3f] | 0xFF << 24;
+                int patternAddr = spritePatternTableAddr + B1 * 16;
+                bool flipH = (B2 & 0x40) != 0;
+                bool flipV = (B2 & 0x80) != 0;
+
+                if (flipV)
+                    cy = 7 - cy;
+
+                int cx = flipH ? 0 : 7;
+                int dir = flipH ? 1 : -1;
+
+                byte b1 = PatternTables[patternAddr + cy];
+                byte b2 = PatternTables[patternAddr + cy + 8];
+
+                for (int n=0; n<8; ++n)
+                {
+                    if (x + cx >= 0 && x + cx < ScreenWidth)
+                    {
+                        byte bit1 = (byte)((b1 >> cx) & 0x1);
+                        byte bit2 = (byte)((b2 >> cx) & 0x1);
+                        byte result = (byte)(bit2 << 1 | bit1);
+
+                        if (result == 1)
+                            Framebuffer[rowStart + x + n] = palette1;
+                        else if (result == 2)
+                            Framebuffer[rowStart + x + n] = palette2;
+                        else if (result == 3)
+                            Framebuffer[rowStart + x + n] = palette3;
+
+                        cx += dir;
+                    }
+                }
+            }
+
+        }
+
         public void Tick()
         {
-            VsyncTimer++;
-            if (VsyncTimer > Nes.PpuTicksPerSecond / 60)
+            ScanlineCycle++;
+            if (ScanlineCycle >= ClocksPerScanline)
             {
-                VsyncTimer = 0;
-                VsyncFlag = true;
-                VsyncSignalToMainLoop = true;
-                if ((PpuCtrl & 0x80) != 0)
-                    nes.Cpu.NMI();
-                else
-                    Console.WriteLine("VSync NMI Ignored");
-                //ShowFrame();
+                int row = ScanlineIndex - VsyncScanlines;
+                if (row >= 0 && row < ScreenHeight)
+                    RenderRow(row);
+                // hack hack
+                if (row == 32)
+                    SpriteHitFlag = true;
+                ++ScanlineIndex;
+                ScanlineCycle = 0;
+            }
+
+            if (ScanlineIndex >= Scanlines)
+            {
+                ScanlineCycle = 0;
+                ScanlineIndex = 0;
+                Vsync();
             }
         }
 
