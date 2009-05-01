@@ -59,10 +59,18 @@ namespace Emu6502
             }
 
             // temp.
-            status |= 0x40;
+            //status |= 0x40;
+            int count = (int)(Nes.PpuTicksPerSecond / 60);
+            if (VsyncTimer > count / 4 && VsyncTimer < (count / 2))
+                status |= 0x40;
 
             VsyncFlag = false;
+
+            if (ScrollLatch != 0)
+                Console.WriteLine("Resetting SCROLL latch");
             ScrollLatch = 0;
+            if (VramAddrLatch != 0)
+                Console.WriteLine("Resetting VRAM latch");
             VramAddrLatch = 0;
 
             return status;
@@ -92,19 +100,32 @@ namespace Emu6502
                 ScrollY = val;
                 Console.WriteLine("SCROLLY = ${0:X2}", val);
             }
+            else
+                Console.WriteLine("Excess scroll x/y latch ${0:X2}", val);
+
             ++ScrollLatch;
         }
 
         // $2006 PPUADDR (W)
         public void WritePpuAddr(byte val)
         {
-            if (VramAddrLatch == 0)
+            VramAddr <<= 8;
+            VramAddr |= val;
+
+            Console.WriteLine("Latched PPU address: ${0:X4}", VramAddr);
+            /*if (VramAddrLatch == 0)
+            {
                 VramAddr = val;
+                Console.WriteLine("Latched PPU address low: ${0:X4}", VramAddr);
+            }
             else if (VramAddrLatch == 1)
             {
                 VramAddr <<= 8;
-                VramAddr |= val;
+                VramAddr |= 8;
+                Console.WriteLine("Latched PPU address hi: ${0:X4}", VramAddr);
             }
+            else
+                Console.WriteLine("Excess PPU address latch: ${0:X2}", val);*/
             
             ++VramAddrLatch;
         }
@@ -114,6 +135,8 @@ namespace Emu6502
         public byte ReadPpuData()
         {
             DelayedVramRead = Read(VramAddr);
+
+            //Console.WriteLine("R VRAM ${0:X4}=${1:X2}", VramAddr, DelayedVramRead);
 
             if ((PpuCtrl & 0x04) != 0)
                 VramAddr += 0x20;
@@ -125,7 +148,10 @@ namespace Emu6502
 
         public void WritePpuData(byte data)
         {
+            //nes.Cpu.Paused = true;
             Write(VramAddr, data);
+
+            //Console.WriteLine("W VRAM ${0:X4}=${1:X2}", VramAddr, data);
 
             if ((PpuCtrl & 0x04) != 0)
                 VramAddr += 0x20;

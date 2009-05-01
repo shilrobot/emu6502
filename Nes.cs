@@ -15,6 +15,7 @@ namespace Emu6502
         public NesMemory Mem;
         public int cpuCycles;
         public int ppuCycles;
+        public int frameDivider = 0;
 
         public Nes(string romfile)
         {
@@ -55,6 +56,12 @@ namespace Emu6502
             if (Ppu.VsyncSignalToMainLoop)
             {
                 Ppu.VsyncSignalToMainLoop = false;
+                /*++frameDivider;
+                if (frameDivider == 5)
+                {
+                    frameDivider = 0;
+                    return false;
+                }*/
                 return false;
             }
 
