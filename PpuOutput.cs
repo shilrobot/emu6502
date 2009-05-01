@@ -59,11 +59,10 @@ namespace Emu6502
 
         private void PpuOutput_Paint(object sender, PaintEventArgs e)
         {
-            return;
             Graphics g = e.Graphics;
             g.Clear(Color.Black);
 
-            DrawNameTable(g, 0x2000, 0, 0);
+            //DrawNameTable(g, 0x2000, 0, 0);
 
             bool EightBySixteen = (ppu.PpuCtrl & 0x20) != 0;
             bool HighBank8x8 = (ppu.PpuCtrl & 0x08) != 0;

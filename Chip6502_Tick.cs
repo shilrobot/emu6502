@@ -48,7 +48,7 @@ case 0x01:
 {
 Encountered("ORA");
 NPC = (ushort)(PC+2);
-addr = ReadWord((Read(PC+1)+X) & 0xFFFF);
+addr = ReadWord((ushort)(Read(PC+1)+X));
 data = Read(addr);
 data |= A;
 A = data;
@@ -225,7 +225,7 @@ case 0x21:
 {
 Encountered("AND");
 NPC = (ushort)(PC+2);
-addr = ReadWord((Read(PC+1)+X) & 0xFFFF);
+addr = ReadWord((ushort)(Read(PC+1)+X));
 data = Read(addr);
 data &= A;
 A = data;
@@ -436,7 +436,7 @@ case 0x41:
 {
 Encountered("EOR");
 NPC = (ushort)(PC+2);
-addr = ReadWord((Read(PC+1)+X) & 0xFFFF);
+addr = ReadWord((ushort)(Read(PC+1)+X));
 data = Read(addr);
 data ^= A;
 A = data;
@@ -654,7 +654,6 @@ break;
 case 0x6C:
 {
 Encountered("JMP");
-Console.WriteLine("${0:X4} JMP INDIRECT", PC);
 NPC = (ushort)(PC+3);
 { ushort addr1 = ReadWord(PC+1); byte addr2_lo = Read(addr1); addr1 = (ushort)((addr1 & 0xFF00) | ((addr1+1)&0xFF)); byte addr2_hi = Read(addr1); addr = (ushort)(addr2_lo | (addr2_hi<<8)); }
 NPC = addr;
@@ -721,7 +720,7 @@ case 0x81:
 {
 Encountered("STA");
 NPC = (ushort)(PC+2);
-addr = ReadWord((Read(PC+1)+X) & 0xFFFF);
+addr = ReadWord((ushort)(Read(PC+1)+X));
 data = A;
 Write(addr, data);
 }
@@ -888,7 +887,7 @@ case 0xA1:
 {
 Encountered("LDA");
 NPC = (ushort)(PC+2);
-addr = ReadWord((Read(PC+1)+X) & 0xFFFF);
+addr = ReadWord((ushort)(Read(PC+1)+X));
 data = Read(addr);
 A = data;
 Z = (data == 0); N = (data > 127);
@@ -1107,7 +1106,7 @@ case 0xC1:
 {
 Encountered("CMP");
 NPC = (ushort)(PC+2);
-addr = ReadWord((Read(PC+1)+X) & 0xFFFF);
+addr = ReadWord((ushort)(Read(PC+1)+X));
 data = Read(addr);
 C = A >= data;
 data = (byte)(A - data);
@@ -1212,7 +1211,7 @@ case 0xD0:
 {
 Encountered("BNE");
 NPC = (ushort)(PC+2);
-if(Z) { byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; NPC = (ushort)(PC+2+offset); };
+if(!Z) { byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; NPC = (ushort)(PC+2+offset); };
 }
 break;
 case 0xD1:
@@ -1361,7 +1360,7 @@ case 0xF0:
 {
 Encountered("BEQ");
 NPC = (ushort)(PC+2);
-if(!Z) { byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; NPC = (ushort)(PC+2+offset); };
+if(Z) { byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; NPC = (ushort)(PC+2+offset); };
 }
 break;
 case 0xF6:
@@ -1396,6 +1395,7 @@ break;
 
 /* END SWITCH */
                 default:
+                    // TODO: Make breaking on this opcode actually fucking work
                     NPC = (ushort)(PC + 1);
                     /*if (ignoreOpcodes < 10)
                     {
@@ -1407,7 +1407,7 @@ break;
                     Console.WriteLine("Invalid Opcode ${0:X2} @ ${1:X4}: treating as NOP", opcode, PC);
                     this.Paused = true;
 
-                    break;
+                    return;
             }
 
             if ((PC & 0xF000) != (NPC & 0xF000))

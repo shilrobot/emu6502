@@ -280,11 +280,11 @@ V = false;
 }}
 
 BEQ {{
-BRANCH(!Z);
+BRANCH(Z);
 }}
 
 BNE {{
-BRANCH(Z);
+BRANCH(!Z);
 }}
 
 BMI {{

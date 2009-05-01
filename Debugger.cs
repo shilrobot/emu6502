@@ -24,7 +24,7 @@ namespace Emu6502
             Application.Idle += new EventHandler(Application_Idle);
             outputWindow = new PpuOutput(nes.Ppu);
             outputWindow.Show(this);
-            outputWindow.Hide();
+            //outputWindow.Hide();
             disassembly2.Nes = nes;
             disassembly2.Update();
         }

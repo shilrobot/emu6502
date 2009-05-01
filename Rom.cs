@@ -79,8 +79,25 @@ namespace Emu6502
                 ChrRomBanks = new byte[vromBanks][];
                 RamBanks = new byte[ramBanks][];
 
+                StreamWriter sw = new StreamWriter(File.Open("out.txt", FileMode.Create, FileAccess.Write));
+
                 for (int i = 0; i < prgRomBanks; ++i)
+                {
                     PrgRomBanks[i] = r.ReadBytes(16 * 1024);
+
+                    int n = 0;
+                    for(int j=0; j<16*1024; ++j)
+                    {
+                        sw.Write("{0:X2} ", PrgRomBanks[i][j]);
+                        ++n;
+                        if (n == 16)
+                        {
+                            sw.WriteLine();
+                            n = 0;
+                        }
+                    }
+                }
+                sw.Close();
 
                 for (int i = 0; i < vromBanks; ++i)
                     ChrRomBanks[i] = r.ReadBytes(8 * 1024);

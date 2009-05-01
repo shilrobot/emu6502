@@ -20,7 +20,7 @@
 						byte addr2_hi = Read(addr1); \
 						addr = (ushort)(addr2_lo | (addr2_hi<<8)); \
 					}
-#define AGEN_INDX	addr = ReadWord((LO+X) & 0xFFFF);
+#define AGEN_INDX	addr = ReadWord((ushort)(LO+X));
 #define AGEN_INDY	addr = (ushort)(ReadWord(LO)+Y);
 #define AGEN_IMPL
 #define AGEN_REL
