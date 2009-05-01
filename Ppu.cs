@@ -136,10 +136,8 @@ namespace Emu6502
                 ScrollY = val;
                 //Console.WriteLine("SCROLLY = ${0:X2}", val);
             }
-            else
-                ;// Console.WriteLine("Excess scroll x/y latch ${0:X2}", val);
 
-            ++ScrollLatch;
+            ScrollLatch = (ScrollLatch + 1) % 2;
         }
 
         // $2006 PPUADDR (W)
@@ -270,7 +268,7 @@ namespace Emu6502
                 Console.WriteLine("VSync NMI Ignored");
         }
 
-        private void RenderBG(int row)
+        private void RenderBG(int row, int nameTableOffset, int screenX)
         {
             int rowStart = ScreenWidth * row;
             int bgPatternStart = (PpuCtrl & 0x10) != 0 ? 0x1000 : 0x0000;
@@ -279,7 +277,7 @@ namespace Emu6502
 
             int tileY = row / 8;
             int subtileY = row % 8;
-            int fbPos = rowStart;
+            //int fbPos = rowStart;
             if (tileY >= 0 && tileY < 0x30)
             {
                 for (int tileX = 0; tileX < 32; ++tileX)
@@ -289,7 +287,7 @@ namespace Emu6502
                     int attrByteSubX = tileX % 4;
                     int attrByteSubY = tileY % 4;
                     int attrAddr = 0x3c0 + attrByteX + attrByteY * 8;
-                    byte attrByte = this.NameAttributeTables[attrAddr];
+                    byte attrByte = this.NameAttributeTables[nameTableOffset+attrAddr];
                     int nibbleX = (attrByteSubX >> 1) & 0x1;
                     int nibbleY = (attrByteSubY >> 1) & 0x1;
                     int shiftAmt = (nibbleY << 2 | nibbleX << 1);
@@ -300,7 +298,7 @@ namespace Emu6502
                     int palette3 = PpuOutput.Palette[Palette[paletteAddr + 3] & 0x3f] | 0xFF << 24;
 
 
-                    int pattern = this.NameAttributeTables[tileY * 0x20 + tileX];
+                    int pattern = this.NameAttributeTables[nameTableOffset + tileY * 0x20 + tileX];
 
                     int patternAddr = bgPatternStart + pattern * 16;
                     byte b1 = PatternTables[patternAddr + subtileY];
@@ -312,16 +310,22 @@ namespace Emu6502
                         byte bit2 = (byte)((b2 >> (7 - subtileX)) & 0x1);
                         byte result = (byte)(bit2 << 1 | bit1);
 
-                        if (result == 3)
-                            Framebuffer[fbPos] = palette3;
-                        else if (result == 2)
-                            Framebuffer[fbPos] = palette2;
-                        else if (result == 1)
-                            Framebuffer[fbPos] = palette1;
-                        else
-                            Framebuffer[fbPos] = palette0;
+                        if (screenX >= 0 && screenX < ScreenWidth)
+                        {
+                            int fbPos = rowStart + screenX;
 
-                        fbPos++;
+                            if (result == 3)
+                                Framebuffer[fbPos] = palette3;
+                            else if (result == 2)
+                                Framebuffer[fbPos] = palette2;
+                            else if (result == 1)
+                                Framebuffer[fbPos] = palette1;
+                            else
+                                Framebuffer[fbPos] = palette0;
+                        }
+
+                        ++screenX;
+                        //fbPos++;
                     }
                 }
             }
@@ -408,8 +412,17 @@ namespace Emu6502
             /*if(row == 32)
                 SpriteHitFlag = true;*/
 
+            int baseNametableOffset = 0;
+            if ((PpuCtrl & 0x3) == 1)
+                baseNametableOffset = 0x400;
+            else if ((PpuCtrl & 0x3) == 2)
+                baseNametableOffset = 0x800;
+            else if ((PpuCtrl & 0x3) == 3)
+                baseNametableOffset = 0xC00;
+
             RenderSprites(row, true);
-            RenderBG(row);
+            RenderBG(row, baseNametableOffset, -ScrollX);
+            RenderBG(row, baseNametableOffset == 0 ? 0x400 : 0, -ScrollX+256);
             RenderSprites(row, false);
         }
 
