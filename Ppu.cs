@@ -58,6 +58,9 @@ namespace Emu6502
                 status |= 0x80;
             }
 
+            // temp.
+            status |= 0x40;
+
             VsyncFlag = false;
             ScrollLatch = 0;
             VramAddrLatch = 0;

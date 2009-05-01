@@ -82,7 +82,25 @@ data = (byte)(Y - data);
 SETNZ;
 }}
 
-// TODO: ADC, SBC, w/ overflow bit
+// TODO: Test the crap out of this
+ADC {{
+READ;
+int result = A + data + (C?1:0);
+C = (result & 0xFF00) != 0;
+V = ( (~(A ^ data) & (A ^ (byte)result)) &0x80) != 0;
+data = A = (byte)result;
+SETNZ;
+}}
+
+// TODO: Test the crap out of this
+SBC {{
+READ;
+int result = A - data - (C?0:1);
+C = (result & 0xFF00) == 0;
+V = ( ((A ^ data) & (A ^ (byte)result)) &0x80) != 0;
+data = A = (byte)result;
+SETNZ;
+}}
 
 ASL {{
 READ;

@@ -615,6 +615,32 @@ NPC = (ushort)(PC+1);
 NPC = (ushort)(PullWord()+1);
 }
 break;
+case 0x61:
+{
+Encountered("ADC");
+NPC = (ushort)(PC+2);
+addr = ReadWord((ushort)(Read(PC+1)+X));
+data = Read(addr);
+int result = A + data + (C?1:0);
+C = (result & 0xFF00) != 0;
+V = ( (~(A ^ data) & (A ^ (byte)result)) &0x80) != 0;
+data = A = (byte)result;
+Z = (data == 0); N = (data > 127);
+}
+break;
+case 0x65:
+{
+Encountered("ADC");
+NPC = (ushort)(PC+2);
+addr = Read(PC+1);
+data = Read(addr);
+int result = A + data + (C?1:0);
+C = (result & 0xFF00) != 0;
+V = ( (~(A ^ data) & (A ^ (byte)result)) &0x80) != 0;
+data = A = (byte)result;
+Z = (data == 0); N = (data > 127);
+}
+break;
 case 0x66:
 {
 Encountered("ROR");
@@ -635,6 +661,18 @@ Encountered("PLA");
 NPC = (ushort)(PC+1);
 data = Pull();
 A = data;
+Z = (data == 0); N = (data > 127);
+}
+break;
+case 0x69:
+{
+Encountered("ADC");
+NPC = (ushort)(PC+2);
+data = Read(PC+1);
+int result = A + data + (C?1:0);
+C = (result & 0xFF00) != 0;
+V = ( (~(A ^ data) & (A ^ (byte)result)) &0x80) != 0;
+data = A = (byte)result;
 Z = (data == 0); N = (data > 127);
 }
 break;
@@ -659,6 +697,19 @@ NPC = (ushort)(PC+3);
 NPC = addr;
 }
 break;
+case 0x6D:
+{
+Encountered("ADC");
+NPC = (ushort)(PC+3);
+addr = ReadWord(PC+1);
+data = Read(addr);
+int result = A + data + (C?1:0);
+C = (result & 0xFF00) != 0;
+V = ( (~(A ^ data) & (A ^ (byte)result)) &0x80) != 0;
+data = A = (byte)result;
+Z = (data == 0); N = (data > 127);
+}
+break;
 case 0x6E:
 {
 Encountered("ROR");
@@ -678,6 +729,32 @@ case 0x70:
 Encountered("BVS");
 NPC = (ushort)(PC+2);
 if(V) { byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; NPC = (ushort)(PC+2+offset); };
+}
+break;
+case 0x71:
+{
+Encountered("ADC");
+NPC = (ushort)(PC+2);
+addr = (ushort)(ReadWord(Read(PC+1))+Y);
+data = Read(addr);
+int result = A + data + (C?1:0);
+C = (result & 0xFF00) != 0;
+V = ( (~(A ^ data) & (A ^ (byte)result)) &0x80) != 0;
+data = A = (byte)result;
+Z = (data == 0); N = (data > 127);
+}
+break;
+case 0x75:
+{
+Encountered("ADC");
+NPC = (ushort)(PC+2);
+addr = (ushort)((Read(PC+1)+X)&0xFF);
+data = Read(addr);
+int result = A + data + (C?1:0);
+C = (result & 0xFF00) != 0;
+V = ( (~(A ^ data) & (A ^ (byte)result)) &0x80) != 0;
+data = A = (byte)result;
+Z = (data == 0); N = (data > 127);
 }
 break;
 case 0x76:
@@ -700,6 +777,32 @@ Encountered("SEI");
 NPC = (ushort)(PC+1);
 Console.WriteLine("${0:X4}: SEI", PC);
 I = true;
+}
+break;
+case 0x79:
+{
+Encountered("ADC");
+NPC = (ushort)(PC+3);
+addr = (ushort)(ReadWord(PC+1)+Y);
+data = Read(addr);
+int result = A + data + (C?1:0);
+C = (result & 0xFF00) != 0;
+V = ( (~(A ^ data) & (A ^ (byte)result)) &0x80) != 0;
+data = A = (byte)result;
+Z = (data == 0); N = (data > 127);
+}
+break;
+case 0x7D:
+{
+Encountered("ADC");
+NPC = (ushort)(PC+3);
+addr = (ushort)(ReadWord(PC+1)+X);
+data = Read(addr);
+int result = A + data + (C?1:0);
+C = (result & 0xFF00) != 0;
+V = ( (~(A ^ data) & (A ^ (byte)result)) &0x80) != 0;
+data = A = (byte)result;
+Z = (data == 0); N = (data > 127);
 }
 break;
 case 0x7E:
@@ -1297,6 +1400,19 @@ data = (byte)(X - data);
 Z = (data == 0); N = (data > 127);
 }
 break;
+case 0xE1:
+{
+Encountered("SBC");
+NPC = (ushort)(PC+2);
+addr = ReadWord((ushort)(Read(PC+1)+X));
+data = Read(addr);
+int result = A - data - (C?0:1);
+C = (result & 0xFF00) == 0;
+V = ( ((A ^ data) & (A ^ (byte)result)) &0x80) != 0;
+data = A = (byte)result;
+Z = (data == 0); N = (data > 127);
+}
+break;
 case 0xE4:
 {
 Encountered("CPX");
@@ -1305,6 +1421,19 @@ addr = Read(PC+1);
 data = Read(addr);
 C = X >= data;
 data = (byte)(X - data);
+Z = (data == 0); N = (data > 127);
+}
+break;
+case 0xE5:
+{
+Encountered("SBC");
+NPC = (ushort)(PC+2);
+addr = Read(PC+1);
+data = Read(addr);
+int result = A - data - (C?0:1);
+C = (result & 0xFF00) == 0;
+V = ( ((A ^ data) & (A ^ (byte)result)) &0x80) != 0;
+data = A = (byte)result;
 Z = (data == 0); N = (data > 127);
 }
 break;
@@ -1328,6 +1457,18 @@ data = X;
 Z = (data == 0); N = (data > 127);
 }
 break;
+case 0xE9:
+{
+Encountered("SBC");
+NPC = (ushort)(PC+2);
+data = Read(PC+1);
+int result = A - data - (C?0:1);
+C = (result & 0xFF00) == 0;
+V = ( ((A ^ data) & (A ^ (byte)result)) &0x80) != 0;
+data = A = (byte)result;
+Z = (data == 0); N = (data > 127);
+}
+break;
 case 0xEA:
 {
 Encountered("NOP");
@@ -1342,6 +1483,19 @@ addr = ReadWord(PC+1);
 data = Read(addr);
 C = X >= data;
 data = (byte)(X - data);
+Z = (data == 0); N = (data > 127);
+}
+break;
+case 0xED:
+{
+Encountered("SBC");
+NPC = (ushort)(PC+3);
+addr = ReadWord(PC+1);
+data = Read(addr);
+int result = A - data - (C?0:1);
+C = (result & 0xFF00) == 0;
+V = ( ((A ^ data) & (A ^ (byte)result)) &0x80) != 0;
+data = A = (byte)result;
 Z = (data == 0); N = (data > 127);
 }
 break;
@@ -1363,6 +1517,32 @@ NPC = (ushort)(PC+2);
 if(Z) { byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; NPC = (ushort)(PC+2+offset); };
 }
 break;
+case 0xF1:
+{
+Encountered("SBC");
+NPC = (ushort)(PC+2);
+addr = (ushort)(ReadWord(Read(PC+1))+Y);
+data = Read(addr);
+int result = A - data - (C?0:1);
+C = (result & 0xFF00) == 0;
+V = ( ((A ^ data) & (A ^ (byte)result)) &0x80) != 0;
+data = A = (byte)result;
+Z = (data == 0); N = (data > 127);
+}
+break;
+case 0xF5:
+{
+Encountered("SBC");
+NPC = (ushort)(PC+2);
+addr = (ushort)((Read(PC+1)+X)&0xFF);
+data = Read(addr);
+int result = A - data - (C?0:1);
+C = (result & 0xFF00) == 0;
+V = ( ((A ^ data) & (A ^ (byte)result)) &0x80) != 0;
+data = A = (byte)result;
+Z = (data == 0); N = (data > 127);
+}
+break;
 case 0xF6:
 {
 Encountered("INC");
@@ -1379,6 +1559,32 @@ case 0xF8:
 Encountered("SED");
 NPC = (ushort)(PC+1);
 Console.WriteLine("${0:X4}: SED", PC);
+}
+break;
+case 0xF9:
+{
+Encountered("SBC");
+NPC = (ushort)(PC+3);
+addr = (ushort)(ReadWord(PC+1)+Y);
+data = Read(addr);
+int result = A - data - (C?0:1);
+C = (result & 0xFF00) == 0;
+V = ( ((A ^ data) & (A ^ (byte)result)) &0x80) != 0;
+data = A = (byte)result;
+Z = (data == 0); N = (data > 127);
+}
+break;
+case 0xFD:
+{
+Encountered("SBC");
+NPC = (ushort)(PC+3);
+addr = (ushort)(ReadWord(PC+1)+X);
+data = Read(addr);
+int result = A - data - (C?0:1);
+C = (result & 0xFF00) == 0;
+V = ( ((A ^ data) & (A ^ (byte)result)) &0x80) != 0;
+data = A = (byte)result;
+Z = (data == 0); N = (data > 127);
 }
 break;
 case 0xFE:
