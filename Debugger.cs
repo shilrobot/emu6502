@@ -47,6 +47,7 @@ namespace Emu6502
                 {
                     UpdateTitle();
                     UpdateScreen();
+                    disassembly2.SelectAddress(nes.Cpu.PC);
                 }
 
                 outputWindow.Invalidate();
@@ -132,6 +133,7 @@ namespace Emu6502
             nes.Cpu.Paused = true;
             UpdateScreen();
             UpdateTitle();
+            disassembly2.SelectAddress(nes.Cpu.PC);
         }
 
         private void interruptNMI_Click(object sender, EventArgs e)
@@ -140,6 +142,7 @@ namespace Emu6502
             nes.Cpu.Paused = true;
             UpdateScreen();
             UpdateTitle();
+            disassembly2.SelectAddress(nes.Cpu.PC);
         }
 
         private void interruptIRQ_Click(object sender, EventArgs e)
@@ -148,6 +151,7 @@ namespace Emu6502
             nes.Cpu.Paused = true;
             UpdateScreen();
             UpdateTitle();
+            disassembly2.SelectAddress(nes.Cpu.PC);
         }
 
         private void debugGo_Click(object sender, EventArgs e)
@@ -158,6 +162,7 @@ namespace Emu6502
             {
                 nes.Cpu.Paused = true;
                 UpdateScreen();
+                disassembly2.SelectAddress(nes.Cpu.PC);
             }
 
             UpdateTitle();
@@ -167,6 +172,9 @@ namespace Emu6502
         {
             Breakpoints bp = new Breakpoints(nes);
             bp.ShowDialog();
+
+            // TODO: Blah, cleaner stuff for this
+            UpdateScreen();
         }
     }
 }

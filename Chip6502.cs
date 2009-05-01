@@ -5,6 +5,8 @@ using System.Text;
 
 namespace Emu6502
 {
+    // TODO: Have an actual breakpoint manager! Durr.
+
     public partial class Chip6502
     {
         // Locations of interrupt vectors in memory
@@ -20,7 +22,7 @@ namespace Emu6502
         public byte Y; // Y register
         public ushort PC; // Current instruction address
 
-        public Dictionary<ushort, bool> Breakpoints = new Dictionary<ushort, bool>();
+        public BreakpointManager Breakpoints { get; private set; }
 
         // Status flags
         // Note: D (BCD arithmetic flag) is not implemented by NES
@@ -36,6 +38,7 @@ namespace Emu6502
         public Chip6502(IMemory mem)
         {
             Mem = mem;
+            Breakpoints = new BreakpointManager();
             Reset();
         }
 
@@ -100,6 +103,8 @@ namespace Emu6502
         private void Push(byte val)
         {
             Write(0x100 + (SP--), val);
+            if (SP == 0xFF)
+                Console.WriteLine("Stack Wraparound on Push");
         }
 
         private void PushWord(ushort val)
@@ -118,10 +123,20 @@ namespace Emu6502
         private byte Pull()
         {
             return Read(0x100 + (++SP));
+            if (SP == 0x00)
+                Console.WriteLine("Stack Wraparound on Pull");
         }
 
         private void PushStatus(bool brk)
         {
+            Console.WriteLine("Pushed Status: N={0} V={1} I={2} Z={3} C={4} B={5}",
+                N ? 1 : 0,
+                V ? 1 : 0,
+                I ? 1 : 0,
+                Z ? 1 : 0,
+                C ? 1 : 0,
+                brk ? 1 : 0);
+
             // Bit 5 is always set, bit 3 (D) is always zero
             byte status = (byte)((N ? 0x80 : 0x00) |
                                  (V ? 0x40 : 0x00) |
@@ -141,12 +156,18 @@ namespace Emu6502
             I = (status & 0x04) != 0;
             Z = (status & 0x02) != 0;
             C = (status & 0x01) != 0;
+            Console.WriteLine("Pulled Status: N={0} V={1} I={2} Z={3} C={4}",
+                N ? 1 : 0,
+                V ? 1 : 0,
+                I ? 1 : 0,
+                Z ? 1 : 0,
+                C ? 1 : 0);
         }
 
         public void SetPC(ushort newPC)
         {
             PC = newPC;
-            if (Breakpoints.ContainsKey(PC) || SingleStep)
+            if (Breakpoints.GetBreakpoint(PC) != null || SingleStep)
             {
                 Paused = true;
                 SingleStep = false;

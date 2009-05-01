@@ -90,6 +90,21 @@ namespace Emu6502
 
                 Console.WriteLine("Loaded all banks.");
 
+                // Temp patch
+                /*byte inst = 0x6a;
+                PrgRomBanks[0][0] = 0xa9;
+                PrgRomBanks[0][1] = 0xff;
+                PrgRomBanks[0][2] = inst;
+                PrgRomBanks[0][3] = inst;
+                PrgRomBanks[0][4] = inst;
+                PrgRomBanks[0][5] = inst;
+                PrgRomBanks[0][6] = inst;
+                PrgRomBanks[0][7] = inst;
+                PrgRomBanks[0][8] = inst;
+                PrgRomBanks[0][9] = inst;
+                PrgRomBanks[0][10] = inst;
+                PrgRomBanks[0][11] = inst;*/
+
                 //Console.WriteLine("Position = {0}",r.BaseStream.Position);
             }
         }

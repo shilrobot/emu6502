@@ -58,7 +58,8 @@ namespace Emu6502
                         break;
                 }
 
-                //Console.WriteLine("R IO ${0:X4} = ${1:X2}", addr, b);
+                if (addr != 0x2002)
+                    Console.WriteLine("R IO ${0:X4} = ${1:X2}", addr, b);
                 return b;
             }
             else if (addr < 0x4020)
@@ -160,16 +161,16 @@ namespace Emu6502
             }
             else if (addr < 0x6000)
             {
-                //Console.WriteLine(" -> Expansion ROM ${0:X4}", addr);
+                Console.WriteLine(" -> Expansion ROM ${0:X4} = ${0:X2}", addr, val);
             }
             else if (addr < 0x8000)
             {
-                //Console.WriteLine(" -> Save RAM ${0:X4}", addr);
+                Console.WriteLine(" -> Save RAM ${0:X4} = ${0:X2}", addr, val);
                 // TODO
             }
             else
             {
-                //Console.WriteLine(" -> PRG-ROM ${0:X4}", addr);
+                Console.WriteLine(" -> PRG-ROM ${0:X4} = ${0:X2}", addr, val);
             }
         }
     }

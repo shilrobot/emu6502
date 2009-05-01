@@ -54,6 +54,7 @@ SETNZ;
 }}
 
 BIT {{
+Console.WriteLine("${0:X4}: BIT", PC);
 READ;
 N = (data & 0x80)!=0; // bit 7
 V = (data & 0x40)!=0; // bit 6
@@ -133,7 +134,6 @@ WRITE;
 SETNZ;
 }}
 
-// TODO: Indirect jump bug(!) - see http://www.atariarchives.org/2bml/chapter_10.php
 JMP {{
 NPC = addr;
 }}
@@ -144,6 +144,7 @@ NPC = addr;
 }}
 
 BRK {{
+Console.WriteLine("${0:X4}: BRK", PC);
 // 2nd byte after BRK is skipped
 NPC++;
 // This is essentially the same as IRQ, except we set the B flag in
@@ -161,16 +162,19 @@ NPC = (ushort)(PullWord()+1);
 }}
 
 RTI {{
+Console.WriteLine("${0:X4}: RTI", PC);
 PullStatus();
 NPC = PullWord();
 }}
 
 // TODO: Does PHP push the B flag as well? Some 6502's do...
 PHP {{
+Console.WriteLine("${0:X4}: PHP", PC);
 PushStatus(false);
 }}
 
 PLP {{
+Console.WriteLine("${0:X4}: PLP", PC);
 PullStatus();
 }}
 
@@ -244,18 +248,22 @@ SP = X;
 }}
 
 SED {{
+Console.WriteLine("${0:X4}: SED", PC);
 // Not implemented on NES
 }}
 
 CLD {{
+Console.WriteLine("${0:X4}: CLD", PC);
 // Not implemented on NES
 }}
 
 SEI {{
+Console.WriteLine("${0:X4}: SEI", PC);
 I = true;
 }}
 
 CLI {{
+Console.WriteLine("${0:X4}: CLI", PC);
 I = false;
 }}
 
@@ -300,7 +308,7 @@ BRANCH(!V);
 }}
 
 BVS {{
-BRANCH(!V);
+BRANCH(V);
 }}
 
 NOP {{

@@ -24,9 +24,7 @@ namespace Emu6502
         private void PopulateList()
         {
             breakpointList.Items.Clear();
-            List<ushort> addrs = new List<ushort>();
-            foreach (ushort addr in nes.Cpu.Breakpoints.Keys)
-                addrs.Add(addr);
+            List<ushort> addrs = nes.Cpu.Breakpoints.GetBreakpointAddresses();
             addrs.Sort();
             foreach (ushort addr in addrs)
                 breakpointList.Items.Add(String.Format("${0:X4}", addr));
@@ -45,7 +43,7 @@ namespace Emu6502
                 return;
             }
 
-            nes.Cpu.Breakpoints[addr] = true;
+            nes.Cpu.Breakpoints.SetBreakpoint(addr);
             PopulateList();
         }
 

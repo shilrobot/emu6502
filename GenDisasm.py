@@ -1,5 +1,33 @@
 from Common import getEncodings, replaceRegion
 
+modeSizes = {'imm':'2',
+				'zpage':'2',
+				'zpagex':'2',
+				'zpagey':'2',
+				'accum':'1',
+				'abs':'3',
+				'absx':'3',
+				'absy':'3',
+				'ind':'3',
+				'indx':'2',
+				'indy':'2',
+				'imp':'1',
+				'rel':'2'}
+				
+modeTypes = {'imm':0,
+				'zpage':2,
+				'zpagex':5,
+				'zpagey':8,
+				'accum':0,
+				'abs':3,
+				'absx':7,
+				'absy':6,
+				'ind':0,
+				'indx':1,
+				'indy':4,
+				'imp':0,
+				'rel':0}
+				
 modeHelpers = {'imm':'Immediate',
 				'zpage':'ZeroPage',
 				'zpagex':'ZeroPageIndexedX',
@@ -16,6 +44,7 @@ modeHelpers = {'imm':'Immediate',
 				
 encodings = getEncodings()				
 				
+		
 s1 = '\n'
 n=0
 for i in encodings:
@@ -40,6 +69,19 @@ for i in encodings:
 		s2 += '\n'
 		n=0
 
+s3 = '\n'
+n=0
+for i in encodings:
+	if i is None:
+		s3 += '0,'
+	else:
+		s3 += '%d,'%(modeTypes[i.modename])
+	n+=1
+	if n == 16:
+		s3 += '\n'
+		n=0
+print s3
+		
 fsrc = open("Disasm.cs","r")
 fileContents = fsrc.read()
 fsrc.close()
