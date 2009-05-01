@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Diagnostics;
 
 namespace Emu6502
 {
@@ -16,6 +17,7 @@ namespace Emu6502
 
         public int[] Framebuffer = new int[ScreenWidth * ScreenHeight];
 
+        public Nes ParentNes { get { return nes; } }
         private Nes nes;
         public byte[] PatternTables;
         public byte[] NameAttributeTables;
@@ -34,7 +36,6 @@ namespace Emu6502
         public byte DelayedVramRead;
         public bool VsyncSignalToMainLoop = false;
         public bool SpriteHitFlag;
-        public int Frame;
 
         private int ScanlineIndex = 0; // Essentially "Y" counter
         private int ScanlineCycle = 0; // Essentially "X" counter
@@ -61,7 +62,6 @@ namespace Emu6502
             ScanlineIndex = 0;
             ScanlineCycle = 0;
             SpriteHitFlag = false;
-            Frame = 0;
 
             // TODO: This is mapper's job
             PatternTables = nes.Rom.ChrRomBanks[0];
@@ -245,7 +245,6 @@ namespace Emu6502
                 nes.Cpu.NMI();
             else
                 Console.WriteLine("VSync NMI Ignored");
-            ++Frame;
         }
 
         private void RenderRow(int row)

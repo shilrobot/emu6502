@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Diagnostics;
 
 namespace Emu6502
 {
@@ -17,6 +18,10 @@ namespace Emu6502
         public int ppuCycles;
         public int frameDivider = 0;
 
+        private Stopwatch sw = new Stopwatch();
+        public float FPS;
+        private int frameCount = 0;
+
         public Nes(string romfile)
         {
             Rom = new Rom(romfile);
@@ -29,10 +34,14 @@ namespace Emu6502
 
         public void Reset()
         {
+            sw.Reset();
+            sw.Start();
             cpuCycles = ppuCycles = 0;
+            frameCount = 0;
             Mem.Reset();
             Cpu.Reset();
             Ppu.Reset();
+            sw.Start();
         }
 
         public bool Tick()
@@ -57,6 +66,15 @@ namespace Emu6502
             if (Ppu.VsyncSignalToMainLoop)
             {
                 Ppu.VsyncSignalToMainLoop = false;
+                ++frameCount;
+                if (frameCount == 10)
+                {
+                    float secs = sw.ElapsedTicks / (float)Stopwatch.Frequency;
+                    FPS = frameCount / secs;
+                    sw.Reset();
+                    sw.Start();
+                    frameCount = 0;
+                }
                 //++frameDivider;
                 /*if (frameDivider == 10)
                 {

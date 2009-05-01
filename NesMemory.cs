@@ -58,13 +58,13 @@ namespace Emu6502
                         break;
                 }
 
-                if (addr != 0x2002)
-                    Console.WriteLine("R IO ${0:X4} = ${1:X2}", addr, b);
+                /*if (addr != 0x2002)
+                    Console.WriteLine("R IO ${0:X4} = ${1:X2}", addr, b);*/
                 return b;
             }
             else if (addr < 0x4020)
             {
-                Console.WriteLine("R IO ${0:X4}", addr);
+                //Console.WriteLine("R IO ${0:X4}", addr);
                 return 0;
             }
             else if (addr < 0x6000)

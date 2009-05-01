@@ -200,7 +200,7 @@ namespace Emu6502
             bmp.UnlockBits(data);
             g.DrawImage(bmp, 0, 0, ClientSize.Width, ClientSize.Height);
 
-            String hud = String.Format("{0:0.00}", ppu.Frame/60.0f);
+            String hud = String.Format("FPS {0:0.0}", ppu.ParentNes.FPS);
             g.DrawString(hud, new Font("Courier New", 8), new SolidBrush(Color.White), 0, 0);
 
 #if false

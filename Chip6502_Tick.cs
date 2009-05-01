@@ -33,7 +33,7 @@ namespace Emu6502
 case 0x00:
 {
 NPC = (ushort)(PC+1);
-Console.WriteLine("${0:X4}: BRK", PC);
+if(false) Console.WriteLine("${0:X4}: BRK", PC);
 NPC++;
 if(!I) {
  PushWord(NPC);
@@ -77,7 +77,7 @@ break;
 case 0x08:
 {
 NPC = (ushort)(PC+1);
-Console.WriteLine("${0:X4}: PHP", PC);
+if(false) Console.WriteLine("${0:X4}: PHP", PC);
 PushStatus(false);
 }
 break;
@@ -217,7 +217,7 @@ case 0x24:
 {
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
-Console.WriteLine("${0:X4}: BIT", PC);
+if(false) Console.WriteLine("${0:X4}: BIT", PC);
 data = Read(addr);
 N = (data & 0x80)!=0;
 V = (data & 0x40)!=0;
@@ -250,7 +250,7 @@ break;
 case 0x28:
 {
 NPC = (ushort)(PC+1);
-Console.WriteLine("${0:X4}: PLP", PC);
+if(false) Console.WriteLine("${0:X4}: PLP", PC);
 PullStatus();
 }
 break;
@@ -279,7 +279,7 @@ case 0x2C:
 {
 NPC = (ushort)(PC+3);
 addr = ReadWord(PC+1);
-Console.WriteLine("${0:X4}: BIT", PC);
+if(false) Console.WriteLine("${0:X4}: BIT", PC);
 data = Read(addr);
 N = (data & 0x80)!=0;
 V = (data & 0x40)!=0;
@@ -390,7 +390,7 @@ break;
 case 0x40:
 {
 NPC = (ushort)(PC+1);
-Console.WriteLine("${0:X4}: RTI", PC);
+if(false) Console.WriteLine("${0:X4}: RTI", PC);
 PullStatus();
 NPC = PullWord();
 }
@@ -519,7 +519,7 @@ break;
 case 0x58:
 {
 NPC = (ushort)(PC+1);
-Console.WriteLine("${0:X4}: CLI", PC);
+if(false) Console.WriteLine("${0:X4}: CLI", PC);
 I = false;
 }
 break;
@@ -706,7 +706,7 @@ break;
 case 0x78:
 {
 NPC = (ushort)(PC+1);
-Console.WriteLine("${0:X4}: SEI", PC);
+if(false) Console.WriteLine("${0:X4}: SEI", PC);
 I = true;
 }
 break;
@@ -1225,7 +1225,7 @@ break;
 case 0xD8:
 {
 NPC = (ushort)(PC+1);
-Console.WriteLine("${0:X4}: CLD", PC);
+if(false) Console.WriteLine("${0:X4}: CLD", PC);
 }
 break;
 case 0xD9:
@@ -1410,7 +1410,7 @@ break;
 case 0xF8:
 {
 NPC = (ushort)(PC+1);
-Console.WriteLine("${0:X4}: SED", PC);
+if(false) Console.WriteLine("${0:X4}: SED", PC);
 }
 break;
 case 0xF9:
@@ -1454,21 +1454,26 @@ break;
                     NPC = (ushort)(PC + 1);
                     /*if (ignoreOpcodes < 10)
                     {
-                        Console.WriteLine("Invalid Opcode ${0:X2} @ ${1:X4}: treating as NOP", opcode, PC);
+                        if(false) Console.WriteLine("Invalid Opcode ${0:X2} @ ${1:X4}: treating as NOP", opcode, PC);
                         ++ignoreOpcodes;
                         if (ignoreOpcodes == 10)
-                            Console.WriteLine("Suppressing further invalid opcode messages");
+                            if(false) Console.WriteLine("Suppressing further invalid opcode messages");
                     }*/
-                    Console.WriteLine("Invalid Opcode ${0:X2} @ ${1:X4}: treating as NOP", opcode, PC);
+                    if(false) Console.WriteLine("Invalid Opcode ${0:X2} @ ${1:X4}: treating as NOP", opcode, PC);
                     this.Paused = true;
 
                     return;
             }
 
             if ((PC & 0xF000) != (NPC & 0xF000))
-                Console.WriteLine("Jumping from ${0:X2} to ${1:X2}", PC, NPC);
+                if(false) Console.WriteLine("Jumping from ${0:X2} to ${1:X2}", PC, NPC);
 
-            SetPC(NPC);
+            PC = NPC;
+            if (SingleStep)
+            {
+                Paused = true;
+                SingleStep = false;
+            }
         }
     }
 }

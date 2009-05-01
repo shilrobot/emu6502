@@ -197,15 +197,18 @@ namespace Emu6502
 
                 if (isBP || isPC)
                 {
-                    int bpX = (int)Math.Round((20 - bpImage.Width) / 2.0);
-                    int bpY = (int)Math.Round(y + (lineHeight - bpImage.Height) / 2.0);
+                    if (bpImage != null && arrowImage != null)
+                    {
+                        int bpX = (int)Math.Round((20 - bpImage.Width) / 2.0);
+                        int bpY = (int)Math.Round(y + (lineHeight - bpImage.Height) / 2.0);
 
-                    RectangleF destRect = new RectangleF(bpX, bpY, bpImage.Width, bpImage.Height);
+                        RectangleF destRect = new RectangleF(bpX, bpY, bpImage.Width, bpImage.Height);
 
-                    if(isBP)
-                        g.DrawImage(bpImage, destRect);
-                    if (isPC)
-                        g.DrawImage(arrowImage, destRect);
+                        if (isBP)
+                            g.DrawImage(bpImage, destRect);
+                        if (isPC)
+                            g.DrawImage(arrowImage, destRect);
+                    }
                 }
 
                 y += lineHeight;

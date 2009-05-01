@@ -167,7 +167,7 @@ namespace Emu6502
         public void SetPC(ushort newPC)
         {
             PC = newPC;
-            if (Breakpoints.GetBreakpoint(PC) != null || SingleStep)
+            if (/*Breakpoints.GetBreakpoint(PC) != null ||*/ SingleStep)
             {
                 Paused = true;
                 SingleStep = false;

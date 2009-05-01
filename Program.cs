@@ -22,7 +22,7 @@ namespace Emu6502
             /*Rom r = new Rom("Roms/Mega Man 2 (U).nes");
             Rom r2 = new Rom("Roms/Castlevania (E).nes");*/
 
-            Nes nes = new Nes("Roms/Super Mario Bros. (E).nes");
+            Nes nes = new Nes("p:/csharp/emu6502/Roms/Super Mario Bros. (E).nes");
             nes.Cpu.Paused = true;
 
 #if false
