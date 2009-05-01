@@ -44,52 +44,44 @@ namespace Emu6502
             sw.Start();
         }
 
-        public bool Tick()
-        {
-            if (Cpu.Paused)
-                return false;
-
-            // TODO: Cycle-accurate CPU simulator
-            ++cpuCycles;
-            //if (cpuCycles == 3)
-            if(cpuCycles == 3) // Hack hack - until we get better timings
-            {
-                cpuCycles = 0;
-                Cpu.Tick();
-            }
-
-            if (Cpu.Paused)
-                return false;
-
-            Ppu.Tick();
-
-            if (Ppu.VsyncSignalToMainLoop)
-            {
-                Ppu.VsyncSignalToMainLoop = false;
-                ++frameCount;
-                if (frameCount == 10)
-                {
-                    float secs = sw.ElapsedTicks / (float)Stopwatch.Frequency;
-                    FPS = frameCount / secs;
-                    sw.Reset();
-                    sw.Start();
-                    frameCount = 0;
-                }
-                //++frameDivider;
-                /*if (frameDivider == 10)
-                {
-                    frameDivider = 0;
-                    return false;
-                }*/
-                return false;
-            }
-
-            return true;
-        }
-
         public void Run()
         {
-            while (Tick()) ;
+            while (!Cpu.Paused)
+            {
+                // CPU clock is 1/3 the PPU clock
+                ++cpuCycles;
+                if (cpuCycles == 3)
+                {
+                    cpuCycles = 0;
+
+                    if (Cpu.WaitCycles > 0)
+                        Cpu.WaitCycles--;
+
+                    if (Cpu.WaitCycles == 0)
+                    {
+                        Cpu.Tick();
+                        if (Cpu.Paused)
+                            break;
+                    }
+                }
+
+                Ppu.Tick();
+
+                if (Ppu.VsyncSignalToMainLoop)
+                {
+                    Ppu.VsyncSignalToMainLoop = false;
+                    ++frameCount;
+                    if (frameCount == 10)
+                    {
+                        float secs = sw.ElapsedTicks / (float)Stopwatch.Frequency;
+                        FPS = frameCount / secs;
+                        sw.Reset();
+                        sw.Start();
+                        frameCount = 0;
+                    }
+                    break;
+                }
+            }
         }
     }
 }

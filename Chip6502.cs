@@ -34,7 +34,7 @@ namespace Emu6502
         public IMemory Mem;
 
         private int ignoreOpcodes = 0;
-        private int cycles = 0;
+        public int WaitCycles = 0;
 
         public Chip6502(IMemory mem)
         {

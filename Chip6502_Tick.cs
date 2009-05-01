@@ -50,16 +50,16 @@ namespace Emu6502
 
         public void Tick()
         {
-            if (Paused)
+            /*if (Paused)
                 return;
 
-            if (cycles > 1)
+            if (WaitCycles > 1)
             {
-                cycles--;
+                WaitCycles--;
                 return;
             }
             else
-                cycles = 0;
+                WaitCycles = 0;*/
             
             ushort NPC;
             ushort addr;
@@ -1494,7 +1494,7 @@ break;
                     return;
             }
 
-            cycles += Cycles[opcode];
+            WaitCycles += Cycles[opcode];
 
             /*if ((PC & 0xF000) != (NPC & 0xF000))
                 if(false) Console.WriteLine("Jumping from ${0:X2} to ${1:X2}", PC, NPC);*/
