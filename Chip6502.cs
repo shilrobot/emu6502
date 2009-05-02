@@ -5,8 +5,6 @@ using System.Text;
 
 namespace Emu6502
 {
-    // TODO: Have an actual breakpoint manager! Durr.
-
     public partial class Chip6502
     {
         // Locations of interrupt vectors in memory
@@ -33,7 +31,7 @@ namespace Emu6502
         public byte SP; // Stack pointer
         public IMemory Mem;
 
-        private int ignoreOpcodes = 0;
+        //private int ignoreOpcodes = 0;
         public int WaitCycles = 0;
 
         public Chip6502(IMemory mem)
@@ -57,7 +55,7 @@ namespace Emu6502
             C = I = V = N = false;
             Z = true;
             SP = 0xFF;
-            ignoreOpcodes = 0;
+            //ignoreOpcodes = 0;
             SetPC(ReadWord(ResetAddr));
             //Console.WriteLine("6502 Reset -> Jump to ${0:X4}", PC);
         }
@@ -174,7 +172,5 @@ namespace Emu6502
                 SingleStep = false;
             }
         }
-
-        // TODO: Cycle-accurate counters, etc.
     }
 }

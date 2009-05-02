@@ -85,8 +85,6 @@ namespace Emu6502
             else if (byteCount == 1)
                 sb.AppendFormat("{0:X4}   {1:X2}         {2}", addr, opcode, opNames[opcode]);
 
-            // TODO: Handle don't-care byte for BRK!
-
             switch (mode)
             {
                 case AddressMode.Immediate:
@@ -125,13 +123,11 @@ namespace Emu6502
                 case AddressMode.Implied:
                     break;
                 case AddressMode.Relative:
-                    // TODO: Appropriate sign shit/maybe print out full address
                     {
                         int offset = (lo <= 127) ? lo : lo - 256;
                         int targetAddr = (addr + 2 + offset) & 0xFFFF;
                         sb.AppendFormat(" ${0:X4}", targetAddr);
                     }
-                    //sb.AppendFormat(" ${0:X2}", lo);
                     break;
             }
 

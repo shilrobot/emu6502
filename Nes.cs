@@ -14,13 +14,13 @@ namespace Emu6502
         public Controller Controller1 = new Controller();
         public Controller Controller2 = new Controller();
 
-        public Rom Rom;
-        public Chip6502 Cpu;
-        public Ppu Ppu;
-        public NesMemory Mem;
-        public int cpuCycles;
-        public int ppuCycles;
-        public int frameDivider = 0;
+        public Rom Rom { get; private set; }
+        public Chip6502 Cpu { get; private set; }
+        public Ppu Ppu { get; private set; }
+        public NesMemory Mem { get; private set; }
+        //private int cpuCycles;
+        //private int ppuCycles;
+        //public int frameDivider = 0;
 
         private Stopwatch sw = new Stopwatch();
         public float FPS;
@@ -40,7 +40,7 @@ namespace Emu6502
         {
             sw.Reset();
             sw.Start();
-            cpuCycles = ppuCycles = 0;
+            //cpuCycles = 0;// ppuCycles = 0;
             frameCount = 0;
             Mem.Reset();
             Cpu.Reset();

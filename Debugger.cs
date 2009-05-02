@@ -18,7 +18,6 @@ namespace Emu6502
         private Nes nes;
         private PpuOutput outputWindow;
         private Stopwatch sw = new Stopwatch();
-        private long cpuCycles = 0;
 
         public Debugger(Nes nes)
         {

@@ -63,7 +63,7 @@ namespace Emu6502
 
                         return b;
                     }
-                // APU registers & expansion ROM
+                // APU registers & expansion ROM (what the heck is that?)
                 case 0x4000:
                 case 0x5000:
                     {
@@ -89,7 +89,7 @@ namespace Emu6502
                         return 0;
                     }
 
-                // Save ram (TODO)
+                // Save ram (TODO) -- goes to cartridge
                 case 0x6000:
                 case 0x7000:
                     return 0;
@@ -111,73 +111,6 @@ namespace Emu6502
                 default:
                     return 0;
             }
-
-#if false
-            if (addr < 0x2000)
-            {
-                // RAM mirroring
-                addr = addr & 0x7FF;
-                //Console.WriteLine(" -> RAM ${0:X4} = ${1:X2}", addr, RAM[addr]);
-                return RAM[addr];
-            }
-            else if (addr < 0x4000)
-            {
-                addr = 0x2000 | (addr & 0x7);
-
-                byte b;
-                switch (addr)
-                {
-                    case 0x2002:
-                        b = nes.Ppu.ReadPpuStatus();
-                        break;
-                    case 0x2003:
-                        b = nes.Ppu.ReadOAMData();
-                        break;
-                    case 0x2007:
-                        b = nes.Ppu.ReadPpuData();
-                        break;
-                    default:
-                        b = 0x0;
-                        break;
-                }
-
-                /*if (addr != 0x2002)
-                    Console.WriteLine("R IO ${0:X4} = ${1:X2}", addr, b);*/
-                return b;
-            }
-            else if (addr < 0x4020)
-            {
-                //Console.WriteLine("R IO ${0:X4}", addr);
-                return 0;
-            }
-            else if (addr < 0x6000)
-            {
-                //Console.WriteLine(" -> Expansion ROM ${0:X4}", addr);
-                return 0;
-            }
-            else if (addr < 0x8000)
-            {
-                //Console.WriteLine(" -> Save RAM ${0:X4}", addr);
-                return 0;
-            }
-            else
-            {
-                byte b;
-
-                // Temp. NROM emulation
-                if (addr < 0xC000)
-                {
-                    b = rom.PrgRomBanks[0][addr - 0x8000];
-                }
-                else
-                {
-                    b = rom.PrgRomBanks[1][addr - 0xC000];
-                }
-
-                //Console.WriteLine(" -> PRG-ROM ${0:X4} = ${1:X2}", addr, b);
-                return b;
-            }
-#endif
         }
 
 

@@ -227,7 +227,7 @@ namespace Emu6502
         {
             // TODO: Now we have to actually make this fancy so we can see what the shit is going on.
 
-            int baseNametableAddr = 0;
+            /*int baseNametableAddr = 0;
             if ((ppu.PpuCtrl & 0x3) == 0)
                 baseNametableAddr = 0x2000;
             else if ((ppu.PpuCtrl & 0x3) == 1)
@@ -235,7 +235,7 @@ namespace Emu6502
             else if ((ppu.PpuCtrl & 0x3) == 2)
                 baseNametableAddr = 0x2800;
             else // 3
-                baseNametableAddr = 0x2C00;
+                baseNametableAddr = 0x2C00;*/
 
             /*int spritePatternTableAddr = 0x0000;
             if ((ppu.PpuCtrl & 0x08) != 0)

@@ -6,6 +6,9 @@ using System.Diagnostics;
 
 namespace Emu6502
 {
+    // TODO: "Faster" palette management
+    // TODO: "Faster" sprite management
+
     public class Ppu
     {
         public const int ScreenWidth = 256;
@@ -26,7 +29,7 @@ namespace Emu6502
         public bool VsyncFlag;
         public byte PpuCtrl;
         public byte PpuMask;
-        public byte OAMAddr;
+        public byte OAMAddr; // TODO: Do DMA from here...
         public byte ScrollX;
         public byte ScrollY;
         /*public int ScrollLatch;
