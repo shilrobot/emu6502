@@ -47,7 +47,7 @@ namespace Emu6502
                             case 0x2002:
                                 b = nes.Ppu.ReadPpuStatus();
                                 break;
-                            case 0x2003:
+                            case 0x2004:
                                 b = nes.Ppu.ReadOAMData();
                                 break;
                             case 0x2007:
@@ -144,6 +144,9 @@ namespace Emu6502
                     case 0x2003:
                         nes.Ppu.WriteOAMAddr(val);
                         break;
+                    case 0x2004:
+                        nes.Ppu.WriteOAMData(val);
+                        break;
                     case 0x2005:
                         nes.Ppu.WritePpuScroll(val);
                         break;
@@ -170,7 +173,7 @@ namespace Emu6502
                     for (int i = 0; i < 256; ++i)
                     {
                         byte b = Read(srcAddr + i);
-                        nes.Ppu.SpriteMem[i] = b;
+                        nes.Ppu.SpriteMem[nes.Ppu.OAMAddr++] = b;
                     }
                 }
                 else if (addr == 0x4016)

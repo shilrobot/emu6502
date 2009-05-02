@@ -23,7 +23,7 @@ namespace Emu6502
 
         private Nes nes;
         public byte[] PatternTables;
-        public byte[] NameAttributeTables;
+        public byte[][] NameAttributeTables;
         public byte[] Palette;
         public byte[] SpriteMem; // OAM stuff
 
@@ -74,7 +74,26 @@ namespace Emu6502
 
             // TODO: This is mapper's job
             PatternTables = (nes.Rom.ChrRomBanks.Length == 0) ? new byte[8*1024] : nes.Rom.ChrRomBanks[0];
-            NameAttributeTables = new byte[4096];
+            //NameAttributeTables = new byte[4096];
+            NameAttributeTables = new byte[4][];
+            if (nes.Rom.MirrorType == MirrorType.Horizontal)
+            {
+                NameAttributeTables[0] = NameAttributeTables[1] = new Byte[1024];
+                NameAttributeTables[2] = NameAttributeTables[3] = new Byte[1024];
+            }
+            else if (nes.Rom.MirrorType == MirrorType.Vertical)
+            {
+                NameAttributeTables[0] = NameAttributeTables[2] = new Byte[1024];
+                NameAttributeTables[1] = NameAttributeTables[3] = new Byte[1024];
+            }
+            else if (nes.Rom.MirrorType == MirrorType.FourScreen)
+            {
+                NameAttributeTables[0] = new Byte[1024];
+                NameAttributeTables[1] = new Byte[1024];
+                NameAttributeTables[2] = new Byte[1024];
+                NameAttributeTables[3] = new Byte[1024];
+            }
+
             Palette = new byte[32];
             SpriteMem = new byte[256];
         }
@@ -244,6 +263,15 @@ namespace Emu6502
             VramAddr &= 0x3FFF;
         }
 
+        public int MirrorHigh(int addr)
+        {
+            return (addr & 0xC00) >> 10;
+        }
+
+        public int MirrorLow(int addr)
+        {
+            return (addr & 0x3FF);
+        }
 
         public byte Read(int addr)
         {
@@ -255,8 +283,8 @@ namespace Emu6502
             }
             else if(addr >= 0x2000 && addr < 0x3F00)
             {
-                int nameAttrAddr = addr & 0x0FFF;
-                return NameAttributeTables[nameAttrAddr];
+                //int nameAttrAddr = addr & 0x0FFF;
+                return NameAttributeTables[MirrorHigh(addr)][MirrorLow(addr)];
             }
             else// if(addr >= 0x3F00 && addr < 0x4000)
             {
@@ -279,8 +307,10 @@ namespace Emu6502
             else if(addr >= 0x2000 && addr < 0x3F00)
             {
                 // TODO: Proper mirroring here
-                int nameAttrAddr = addr & 0xFFF;
-                NameAttributeTables[nameAttrAddr] = val;
+                /*int nameAttrAddr = addr & 0xFFF;
+                NameAttributeTables[nameAttrAddr] = val;*/
+
+                NameAttributeTables[MirrorHigh(addr)][MirrorLow(addr)] = val;
             }
             else// if(addr >= 0x3F00 && addr < 0x4000)
             {
@@ -315,15 +345,17 @@ namespace Emu6502
                 Framebuffer[pos++] = bgcolor;
         }
 
-        private void RenderBG(int row, int nameTableOffset, int screenX)
+        private void RenderBG(int srcRow, int ntX, int ntY, int screenX, int screenY)
         {
-            int rowStart = ScreenWidth * row;
+            int rowStart = ScreenWidth * screenY;
             int bgPatternStart = (PpuCtrl & 0x10) != 0 ? 0x1000 : 0x0000;
 
             //int nametableStart = 0x2000;
 
-            int tileY = row / 8;
-            int subtileY = row % 8;
+            int mirrorHigh = ntY << 1 | ntX;//MirrorHigh(nameTableOffset);
+
+            int tileY = srcRow / 8;
+            int subtileY = srcRow % 8;
             //int fbPos = rowStart;
             if (tileY >= 0 && tileY < 0x30)
             {
@@ -334,7 +366,7 @@ namespace Emu6502
                     int attrByteSubX = tileX % 4;
                     int attrByteSubY = tileY % 4;
                     int attrAddr = 0x3c0 + attrByteX + attrByteY * 8;
-                    byte attrByte = this.NameAttributeTables[nameTableOffset+attrAddr];
+                    byte attrByte = NameAttributeTables[mirrorHigh][attrAddr];
                     int nibbleX = (attrByteSubX >> 1) & 0x1;
                     int nibbleY = (attrByteSubY >> 1) & 0x1;
                     int shiftAmt = (nibbleY << 2 | nibbleX << 1);
@@ -345,7 +377,7 @@ namespace Emu6502
                     int palette3 = PpuOutput.Palette[Palette[paletteAddr + 3] & 0x3f] | 0xFF << 24;
 
 
-                    int pattern = this.NameAttributeTables[nameTableOffset + tileY * 0x20 + tileX];
+                    int pattern = NameAttributeTables[mirrorHigh][tileY * 0x20 + tileX];
 
                     int patternAddr = bgPatternStart + pattern * 16;
                     byte b1 = PatternTables[patternAddr + subtileY];
@@ -462,22 +494,32 @@ namespace Emu6502
             bool enableBG = (PpuMask & 0x08) !=0;
             bool enableSprites = (PpuMask & 0x10)!=0;
 
-            int baseNametableOffset = 0;
-            if ((PpuCtrl & 0x3) == 1)
-                baseNametableOffset = 0x400;
-            else if ((PpuCtrl & 0x3) == 2)
-                baseNametableOffset = 0x800;
-            else if ((PpuCtrl & 0x3) == 3)
-                baseNametableOffset = 0xC00;
-
+            int baseNTX = PpuCtrl & 0x1;
+            int baseNTY = (PpuCtrl >> 1) & 0x1;
 
             FillBG(row);
             if(enableSprites)
                 RenderSprites(row, true);
             if (enableBG)
             {
-                RenderBG(row, baseNametableOffset, -ScrollX);
-                RenderBG(row, baseNametableOffset == 0 ? 0x400 : 0, -ScrollX + 256);
+                if (row >= ScreenHeight - ScrollY)
+                {
+                    baseNTY ^= 1;
+
+                    RenderBG(row + ScrollY - ScreenHeight, baseNTX, baseNTY, -ScrollX, row);
+                    baseNTX ^= 1;
+                    RenderBG(row + ScrollY - ScreenHeight, baseNTX, baseNTY, -ScrollX + ScreenWidth, row);
+                }
+                else
+                {
+                    RenderBG(row + ScrollY, baseNTX, baseNTY, -ScrollX, row);
+                    baseNTX ^= 1;
+                    RenderBG(row + ScrollY, baseNTX, baseNTY, -ScrollX + ScreenWidth, row);                    
+                }
+
+                // TODO: Do better than this?
+                /*RenderBG(row, baseNametableOffset, -ScrollX);
+                RenderBG(row, baseNametableOffset == 0 ? 0x400 : 0, -ScrollX + 256);*/
             }
             if (enableSprites)
                 RenderSprites(row, false);

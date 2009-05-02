@@ -11,12 +11,20 @@ namespace Emu6502
         public RomFormatException(string message) : base(message) { }
     }
 
+    public enum MirrorType
+    {
+        Horizontal,
+        Vertical,
+        FourScreen
+    }
+
     // Reads in a .NES format ROM file
     public class Rom
     {
         public byte[][] PrgRomBanks;
         public byte[][] ChrRomBanks;
         public byte[][] RamBanks;
+        public MirrorType MirrorType;
 
         private static string GetMapperName(int number)
         {
@@ -69,7 +77,7 @@ namespace Emu6502
                 Console.WriteLine("ROM Ctrl Byte 1: 0x{0:X2}", rcb1);
                 Console.WriteLine("ROM Ctrl Byte 2: 0x{0:X2}", rcb2);
                 Console.WriteLine("    Mapper: {0}: {1}", mapper, GetMapperName(mapper));
-                Console.WriteLine("    Mirroring: {0}", (rcb1 & 0x01) != 0 ? "Horizontal" : "Vertical");
+                Console.WriteLine("    Mirroring: {0}", (rcb1 & 0x01) != 0 ? "Vertical" : "Horizontal");
                 Console.WriteLine("    Battery-Backed RAM: {0}", (rcb1 & 0x02) != 0 ? "Yes" : "No");
                 Console.WriteLine("    512-Byte Trainer: {0}", (rcb1 & 0x04) != 0 ? "Yes" : "No");
                 Console.WriteLine("    4-Screen Mirroring: {0}", (rcb1 & 0x08) != 0 ? "Yes" : "No");
@@ -94,6 +102,13 @@ namespace Emu6502
                     RamBanks[i] = r.ReadBytes(8 * 1024);
 
                 Console.WriteLine("Loaded all banks.");
+
+                if ((rcb1 & 0x08) != 0)
+                    MirrorType = MirrorType.FourScreen;
+                else if ((rcb1 & 0x01) != 0)
+                    MirrorType = MirrorType.Vertical;
+                else
+                    MirrorType = MirrorType.Horizontal;
 
                 // Temp patch
                 /*byte inst = 0x6a;
