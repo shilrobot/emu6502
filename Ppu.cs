@@ -29,8 +29,9 @@ namespace Emu6502
         public byte OAMAddr;
         public byte ScrollX;
         public byte ScrollY;
-        public int ScrollLatch;
-        public int VramAddrLatch;
+        /*public int ScrollLatch;
+        public int VramAddrLatch;*/
+        public bool PpuLatch;
         public ushort VramAddr;
         public byte DelayedVramRead;
         public bool VsyncSignalToMainLoop = false;
@@ -46,15 +47,16 @@ namespace Emu6502
 
         public void Reset()
         {
+            PpuLatch = false;
             Framebuffer = new int[ScreenWidth * ScreenHeight];
             VsyncFlag = false;
             PpuCtrl = 0x0;
             PpuMask = 0x0;
             OAMAddr = 0x0;
-            ScrollLatch = 0;
+            //ScrollLatch = 0;
             ScrollX = 0;
             ScrollY = 0;
-            VramAddrLatch = 0;
+            //VramAddrLatch = 0;
             VramAddr = 0;
             DelayedVramRead = 0;
             VsyncSignalToMainLoop = false;
@@ -100,12 +102,13 @@ namespace Emu6502
 
             VsyncFlag = false;
 
-            if (ScrollLatch != 0)
+            /*if (ScrollLatch != 0)
                 ;// Console.WriteLine("Resetting SCROLL latch");
             ScrollLatch = 0;
             if (VramAddrLatch != 0)
                 ;// Console.WriteLine("Resetting VRAM latch");
-            VramAddrLatch = 0;
+            VramAddrLatch = 0;*/
+            PpuLatch = false;
             /*ScrollX = 0;
             VramAddr = 0;*/
 
@@ -126,25 +129,38 @@ namespace Emu6502
         // $2005 PPUSCROLL (W)
         public void WritePpuScroll(byte val)
         {
-            if (ScrollLatch == 0)
+            PpuCtrl &= 0xFC;
+            if (!PpuLatch)
             {
                 ScrollX = val;
                 //Console.WriteLine("SCROLLX = ${0:X2}", val);
             }
-            else if (ScrollLatch == 1)
+            else// if (ScrollLatch == 1)
             {
                 ScrollY = val;
                 //Console.WriteLine("SCROLLY = ${0:X2}", val);
             }
 
-            ScrollLatch = (ScrollLatch + 1) % 2;
+            //ScrollLatch++;
+            PpuLatch = !PpuLatch;
+            //ScrollLatch = (ScrollLatch + 1) % 2;
         }
 
         // $2006 PPUADDR (W)
         public void WritePpuAddr(byte val)
         {
-            VramAddr <<= 8;
-            VramAddr |= val;
+            /*VramAddr <<= 8;
+            VramAddr |= val;*/
+            if (!PpuLatch)
+            {
+                VramAddr = val;// (ushort)((VramAddr & 0xFF00) | val);
+            }
+            else
+            {
+                //VramAddr = (ushort)((VramAddr & 0x00FF) | (val<<8));
+                VramAddr <<= 8;
+                VramAddr |= val;
+            }
 
             //Console.WriteLine("Latched PPU address: ${0:X4}", VramAddr);
             /*if (VramAddrLatch == 0)
@@ -160,8 +176,8 @@ namespace Emu6502
             }
             else
                 Console.WriteLine("Excess PPU address latch: ${0:X2}", val);*/
-            
-            ++VramAddrLatch;
+
+            PpuLatch = !PpuLatch;
         }
 
         // $2006 PPUDATA (R/W)
@@ -239,7 +255,7 @@ namespace Emu6502
                 // Zeroth element of every palette entry is mirrored
                 if ((paletteAddr & 0xF) == 0)
                 {
-                    Console.WriteLine("Palette (Mirror) ${0:X2} = ${1:X2}", paletteAddr, val);
+                    //Console.WriteLine("Palette (Mirror) ${0:X2} = ${1:X2}", paletteAddr, val);
                     Palette[0x00] =
                     /*Palette[0x04] =
                     Palette[0x08] =
@@ -251,7 +267,7 @@ namespace Emu6502
                 }
                 else
                 {
-                    Console.WriteLine("Palette ${0:X2} = ${1:X2}", paletteAddr, val);
+                    //Console.WriteLine("Palette ${0:X2} = ${1:X2}", paletteAddr, val);
                     Palette[paletteAddr] = val;
                 }
             }
@@ -266,6 +282,14 @@ namespace Emu6502
                 nes.Cpu.NMI();
             else
                 Console.WriteLine("VSync NMI Ignored");
+        }
+
+        private void FillBG(int row)
+        {
+            int bgcolor = PpuOutput.Palette[Palette[0] & 0x3f] | 0xFF << 24;
+            int pos = ScreenWidth * row;
+            for (int x = 0; x < ScreenWidth; x++)
+                Framebuffer[pos++] = bgcolor;
         }
 
         private void RenderBG(int row, int nameTableOffset, int screenX)
@@ -292,7 +316,7 @@ namespace Emu6502
                     int nibbleY = (attrByteSubY >> 1) & 0x1;
                     int shiftAmt = (nibbleY << 2 | nibbleX << 1);
                     int paletteAddr = ((attrByte >> shiftAmt) & 0x3) * 4;
-                    int palette0 = PpuOutput.Palette[Palette[0] & 0x3f] | 0xFF << 24;
+                    //int palette0 = PpuOutput.Palette[Palette[0] & 0x3f] | 0xFF << 24;
                     int palette1 = PpuOutput.Palette[Palette[paletteAddr + 1] & 0x3f] | 0xFF << 24;
                     int palette2 = PpuOutput.Palette[Palette[paletteAddr + 2] & 0x3f] | 0xFF << 24;
                     int palette3 = PpuOutput.Palette[Palette[paletteAddr + 3] & 0x3f] | 0xFF << 24;
@@ -320,8 +344,8 @@ namespace Emu6502
                                 Framebuffer[fbPos] = palette2;
                             else if (result == 1)
                                 Framebuffer[fbPos] = palette1;
-                            else
-                                Framebuffer[fbPos] = palette0;
+                            /*else
+                                Framebuffer[fbPos] = palette0;*/
                         }
 
                         ++screenX;
@@ -412,6 +436,9 @@ namespace Emu6502
             /*if(row == 32)
                 SpriteHitFlag = true;*/
 
+            bool enableBG = (PpuMask & 0x08) !=0;
+            bool enableSprites = (PpuMask & 0x10)!=0;
+
             int baseNametableOffset = 0;
             if ((PpuCtrl & 0x3) == 1)
                 baseNametableOffset = 0x400;
@@ -420,10 +447,23 @@ namespace Emu6502
             else if ((PpuCtrl & 0x3) == 3)
                 baseNametableOffset = 0xC00;
 
-            RenderSprites(row, true);
-            RenderBG(row, baseNametableOffset, -ScrollX);
-            RenderBG(row, baseNametableOffset == 0 ? 0x400 : 0, -ScrollX+256);
-            RenderSprites(row, false);
+
+            FillBG(row);
+            if(enableSprites)
+                RenderSprites(row, true);
+            if (enableBG)
+            {
+                RenderBG(row, baseNametableOffset, -ScrollX);
+                RenderBG(row, baseNametableOffset == 0 ? 0x400 : 0, -ScrollX + 256);
+            }
+            if (enableSprites)
+                RenderSprites(row, false);
+
+            /*unchecked
+            {
+                Framebuffer[row * ScreenWidth + ScrollX] = (int)0xFFFF0000;
+                Framebuffer[row * ScreenWidth + 10 + (PpuCtrl & 0x3) * 10] = (int)0xFF00FF00;
+            }*/
         }
 
         public void FinishScanline()
@@ -435,7 +475,7 @@ namespace Emu6502
                 if (row >= 0 && row < ScreenHeight)
                     RenderRow(row);
                 // hack hack
-                if (row == 32)
+                if (row == 31)
                     SpriteHitFlag = true;
                 ++ScanlineIndex;
                 //ScanlineCycle = 0;
