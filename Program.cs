@@ -22,7 +22,12 @@ namespace Emu6502
             /*Rom r = new Rom("Roms/Mega Man 2 (U).nes");
             Rom r2 = new Rom("Roms/Castlevania (E).nes");*/
 
-            Nes nes = new Nes("p:/csharp/emu6502/Roms/Super Mario Bros. (E).nes");
+            OpenFileDialog dlg = new OpenFileDialog();
+            dlg.InitialDirectory = @"p:\csharp\emu6502\roms";
+            if (dlg.ShowDialog() != DialogResult.OK)
+                return;
+
+            Nes nes = new Nes(dlg.FileName);
             nes.Cpu.Paused = true;
 
 #if false

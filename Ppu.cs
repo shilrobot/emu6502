@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
+using System.IO;
 
 namespace Emu6502
 {
@@ -40,8 +41,11 @@ namespace Emu6502
         public bool VsyncSignalToMainLoop = false;
         public bool SpriteHitFlag;
 
+        public int FrameCycle = 0;
         public int ScanlineIndex = 0; // Essentially "Y" counter
         public int ScanlineCycle = 0; // Essentially "X" counter
+
+        private StreamWriter fs = new StreamWriter("nmi.csv");
 
         public Ppu(Nes nes)
         {
@@ -63,12 +67,13 @@ namespace Emu6502
             VramAddr = 0;
             DelayedVramRead = 0;
             VsyncSignalToMainLoop = false;
+            FrameCycle = 0;
             ScanlineIndex = 0;
             ScanlineCycle = 0;
             SpriteHitFlag = false;
 
             // TODO: This is mapper's job
-            PatternTables = nes.Rom.ChrRomBanks[0];
+            PatternTables = (nes.Rom.ChrRomBanks.Length == 0) ? new byte[8*1024] : nes.Rom.ChrRomBanks[0];
             NameAttributeTables = new byte[4096];
             Palette = new byte[32];
             SpriteMem = new byte[256];
@@ -77,14 +82,19 @@ namespace Emu6502
         // $2000 PPUCTRL (W)
         public void WritePpuCtrl(byte val)
         {
-            //Console.WriteLine("PPUCTRL = ${0:X2}", val);
+            Console.WriteLine("PPUCTRL = ${0:X2} PC = ${1:X4}", val, nes.Cpu.PC);
             PpuCtrl = val;
+
+            if ((PpuCtrl & 0x80) != 0)
+                fs.WriteLine("{0},{1},VBL NMI Enabled", nes.TotalCpuCycles, VsyncFlag?1:0);
+            else
+                fs.WriteLine("{0},{1},VBL NMI Enabled", nes.TotalCpuCycles, VsyncFlag ? 1 : 0);
         }
         
         // $2001 PPUMASK (W)
         public void WritePpuMask(byte val)
         {
-            //Console.WriteLine("PPUMASK = ${0:X2}", val);
+            Console.WriteLine("PPUMASK = ${0:X2} PC = ${1:X4}", val, nes.Cpu.PC);
             PpuMask = val;
         }
 
@@ -96,9 +106,12 @@ namespace Emu6502
             byte status = 0;
             if (VsyncFlag)
             {
-                ;// Console.WriteLine("PPUSTATUS read returned VSync flag");
+                fs.WriteLine("{0},{1},VBL flag read", nes.TotalCpuCycles, VsyncFlag?1:0);
+                Console.WriteLine("PPUSTATUS read returned VSync flag PC=${0:X4}", nes.Cpu.PC);
                 status |= 0x80;
             }
+            /*else
+                fs.WriteLine("{0},{1},VBL flag read", nes.TotalCpuCycles, VsyncFlag ? 1 : 0);*/
 
             if (SpriteHitFlag)
                 status |= 0x40;
@@ -121,7 +134,7 @@ namespace Emu6502
         // $2003 OAMADDR (W)
         public void WriteOAMAddr(byte val)
         {
-            //Console.WriteLine("OAMADDR = ${0:X2}", val);
+            Console.WriteLine("OAMADDR = ${0:X2}", val);
             OAMAddr = val;
         }
 
@@ -183,12 +196,24 @@ namespace Emu6502
             PpuLatch = !PpuLatch;
         }
 
-        // $2006 PPUDATA (R/W)
-        // TODO: Check that this is really correct
+        // $2007 PPUDATA (R/W)
         public byte ReadPpuData()
         {
-            byte old = DelayedVramRead;
-            DelayedVramRead = Read(VramAddr);
+            byte result;
+
+            // Palette read
+            if (VramAddr >= 0x3f00 && VramAddr < 0x4000)
+            {
+                DelayedVramRead = Read(0x2F00 | (VramAddr & 0xFF));
+                result = Read(VramAddr);
+                Console.WriteLine("R VRAM (pal) ${0:X4}=${1:X2}", VramAddr, result);
+            }
+            else
+            {
+                result = DelayedVramRead;
+                DelayedVramRead = Read(VramAddr);
+                Console.WriteLine("R VRAM ${0:X4}=${1:X2}", VramAddr, result);
+            }
 
             //Console.WriteLine("R VRAM ${0:X4}=${1:X2}", VramAddr, DelayedVramRead);
 
@@ -199,7 +224,7 @@ namespace Emu6502
 
             VramAddr &= 0x3FFF;
 
-            return old;
+            return result;
         }
 
         public void WritePpuData(byte data)
@@ -209,6 +234,8 @@ namespace Emu6502
 
             /*if(data != 0x00 && data != 0x24)
                 Console.WriteLine("W VRAM ${0:X4}=${1:X2}", VramAddr, data);*/
+
+            //Console.WriteLine("W VRAM ${0:X4}=${1:X2}", VramAddr, data);
 
             if ((PpuCtrl & 0x04) != 0)
                 VramAddr += 0x20;
@@ -228,7 +255,7 @@ namespace Emu6502
             }
             else if(addr >= 0x2000 && addr < 0x3F00)
             {
-                int nameAttrAddr = addr & 0x1FFF;
+                int nameAttrAddr = addr & 0x0FFF;
                 return NameAttributeTables[nameAttrAddr];
             }
             else// if(addr >= 0x3F00 && addr < 0x4000)
@@ -245,10 +272,14 @@ namespace Emu6502
             if(addr >= 0 && addr < 0x2000)
             {
                 // Assume this is ROM for now
+                //Console.WriteLine("Writing to ROM! O_O");
+                // Temp. -- allow writing to ROM, overtest.nes does this
+                PatternTables[addr] = val;
             }
             else if(addr >= 0x2000 && addr < 0x3F00)
             {
-                int nameAttrAddr = addr & 0x1FFF;
+                // TODO: Proper mirroring here
+                int nameAttrAddr = addr & 0xFFF;
                 NameAttributeTables[nameAttrAddr] = val;
             }
             else// if(addr >= 0x3F00 && addr < 0x4000)
@@ -274,17 +305,6 @@ namespace Emu6502
                     Palette[paletteAddr] = val;
                 }
             }
-        }
-
-        private void Vsync()
-        {
-            SpriteHitFlag = false;
-            VsyncFlag = true;
-            VsyncSignalToMainLoop = true;
-            if ((PpuCtrl & 0x80) != 0)
-                nes.Cpu.NMI();
-            else
-                Console.WriteLine("VSync NMI Ignored");
         }
 
         private void FillBG(int row)
@@ -469,8 +489,28 @@ namespace Emu6502
             }*/
         }
 
+        private void Vsync()
+        {
+            SpriteHitFlag = false;
+            VsyncFlag = true;
+            VsyncSignalToMainLoop = true;
+            if ((PpuCtrl & 0x80) != 0)
+            {
+                fs.WriteLine("{0},1,NMI Triggered", nes.TotalCpuCycles);
+                nes.Cpu.NMI();
+            }
+            else
+                Console.WriteLine("VSync NMI Ignored");
+        }
+
         public void FinishScanline()
         {
+            /*if (ScanlineIndex == 20)
+            {
+                Console.WriteLine("Clear NMI Flag @ {0} cycles", nes.TotalCpuCycles);
+                VsyncFlag = false;
+            }*/
+
             /*ScanlineCycle++;
             if (ScanlineCycle >= ClocksPerScanline)
             {*/
@@ -487,10 +527,33 @@ namespace Emu6502
                 {
                     ScanlineCycle = 0;
                     ScanlineIndex = 0;
+                    FrameCycle = 0;
                     Vsync();
+                    fs.WriteLine("{0},1,VBL set", nes.TotalCpuCycles);
+                    Console.WriteLine("NMI @ {0} cycles", nes.TotalCpuCycles);
                 }
             //}
 
+        }
+
+        public void Tick()
+        {
+            FrameCycle++;
+            ScanlineCycle++;
+
+            // Temp. -- Figure out why this works! :( Should be 2270*3 = 6810
+            if (FrameCycle == 2270*3)//6200)
+            {
+                fs.WriteLine("{0},0,Clear VBL Flag", nes.TotalCpuCycles);
+                Console.WriteLine("Clear NMI Flag @ {0} cycles", nes.TotalCpuCycles);
+                VsyncFlag = false;
+            }
+
+            if (ScanlineCycle == ClocksPerScanline)
+            {
+                ScanlineCycle = 0;
+                FinishScanline();
+            }
         }
 
         /*private void ShowFrame()

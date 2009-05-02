@@ -75,28 +75,16 @@ namespace Emu6502
                 Console.WriteLine("    4-Screen Mirroring: {0}", (rcb1 & 0x08) != 0 ? "Yes" : "No");
                 Console.WriteLine("8KB RAM banks: {0}", ramBanks);
 
-                PrgRomBanks = new byte[prgRomBanks][];
+                PrgRomBanks = new byte[prgRomBanks==1?2:prgRomBanks][];
                 ChrRomBanks = new byte[vromBanks][];
                 RamBanks = new byte[ramBanks][];
 
                 StreamWriter sw = new StreamWriter(File.Open("out.txt", FileMode.Create, FileAccess.Write));
 
                 for (int i = 0; i < prgRomBanks; ++i)
-                {
                     PrgRomBanks[i] = r.ReadBytes(16 * 1024);
-
-                    int n = 0;
-                    for(int j=0; j<16*1024; ++j)
-                    {
-                        sw.Write("{0:X2} ", PrgRomBanks[i][j]);
-                        ++n;
-                        if (n == 16)
-                        {
-                            sw.WriteLine();
-                            n = 0;
-                        }
-                    }
-                }
+                if (prgRomBanks == 1)
+                    PrgRomBanks[1] = PrgRomBanks[0];
                 sw.Close();
 
                 for (int i = 0; i < vromBanks; ++i)

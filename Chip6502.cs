@@ -16,7 +16,7 @@ namespace Emu6502
         public bool SingleStep = false;
 
         public byte A; // Accumulator
-        public byte X; // X registr
+        public byte X; // X register
         public byte Y; // Y register
         public ushort PC; // Current instruction address
 
@@ -26,7 +26,7 @@ namespace Emu6502
         // Note: D (BCD arithmetic flag) is not implemented by NES
         // Likewise, B is not a real flag, but rather only shows up as 1 in the saved
         // status register on the stack after BRK causes an interrupt.
-        public bool C, Z, I, V, N;
+        public bool C, Z, I, V, N, D;
 
         public byte SP; // Stack pointer
         public IMemory Mem;
@@ -52,12 +52,12 @@ namespace Emu6502
             A = X = Y = 0;
             // Load PC from reset vector
             // Z flag apparently is set after reset
-            C = I = V = N = false;
+            C = I = V = N = D = false;
             Z = true;
             SP = 0xFF;
             //ignoreOpcodes = 0;
             SetPC(ReadWord(ResetAddr));
-            //Console.WriteLine("6502 Reset -> Jump to ${0:X4}", PC);
+            Console.WriteLine("6502 Reset -> Jump to ${0:X4}", PC);
         }
 
         // In practice this is connected to the vertical retrace from the PPU
@@ -67,7 +67,8 @@ namespace Emu6502
             PushStatus(false);
             I = true;
             SetPC(ReadWord(NMIAddr));
-            //Console.WriteLine("6502 NMI -> Jump to ${0:X4}", PC);
+            Console.WriteLine("6502 NMI -> Jump to ${0:X4}", PC);
+            WaitCycles += 7; // Interrupt latency
         }
 
         public void IRQ()
@@ -78,10 +79,10 @@ namespace Emu6502
                 PushStatus(false);
                 I = true;
                 SetPC(ReadWord(IRQAddr));
-                //Console.WriteLine("6502 IRQ -> Jump to ${0:X4}", PC);
+                Console.WriteLine("6502 IRQ -> Jump to ${0:X4}", PC);
             }
             else
-                ;// Console.WriteLine("6502 IRQ (Ignored)");
+                Console.WriteLine("6502 IRQ (Ignored)");
         }
 
         private byte Read(int addr)
@@ -92,6 +93,11 @@ namespace Emu6502
         private ushort ReadWord(int addr)
         {
             return (ushort)(Read(addr) | Read(addr + 1) << 8);
+        }
+
+        private ushort ReadWordZP(int addr)
+        {
+            return (ushort)(Read(addr&0xFF) | Read((addr + 1)&0xFF) << 8);
         }
 
         private void Write(int addr, byte val)
@@ -141,6 +147,7 @@ namespace Emu6502
                                  (V ? 0x40 : 0x00) |
                                  0x20 |
                                  (brk ? 0x10 : 0x00) |
+                                 (D ? 0x08 : 0x00) |
                                  (I ? 0x04 : 0x00) |
                                  (Z ? 0x02 : 0x00) |
                                  (C ? 0x01 : 0x00));
@@ -152,6 +159,7 @@ namespace Emu6502
             byte status = Pull();
             N = (status & 0x80) != 0;
             V = (status & 0x40) != 0;
+            D = (status & 0x08) != 0;
             I = (status & 0x04) != 0;
             Z = (status & 0x02) != 0;
             C = (status & 0x01) != 0;
@@ -166,7 +174,7 @@ namespace Emu6502
         public void SetPC(ushort newPC)
         {
             PC = newPC;
-            if (/*Breakpoints.GetBreakpoint(PC) != null ||*/ SingleStep)
+            if (Breakpoints.GetBreakpoint(PC) != null || SingleStep)
             {
                 Paused = true;
                 SingleStep = false;

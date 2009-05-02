@@ -9,7 +9,8 @@ namespace Emu6502
 
     public class Nes
     {
-        public const long PpuTicksPerSecond = 5369318;
+        //public const long PpuTicksPerSecond = 5369318;
+        public static Nes ActiveNes;
 
         public Controller Controller1 = new Controller();
         public Controller Controller2 = new Controller();
@@ -22,12 +23,17 @@ namespace Emu6502
         //private int ppuCycles;
         //public int frameDivider = 0;
 
+        private int cpuDivider = 0;
+        public long TotalCpuCycles = 0;
+        public long TotalPpuCycles = 0;
+
         private Stopwatch sw = new Stopwatch();
         public float FPS;
         private int frameCount = 0;
 
         public Nes(string romfile)
         {
+            ActiveNes=this;
             Rom = new Rom(romfile);
             Mem = new NesMemory(this);
             Cpu = new Chip6502(Mem);
@@ -41,6 +47,9 @@ namespace Emu6502
             sw.Reset();
             sw.Start();
             //cpuCycles = 0;// ppuCycles = 0;
+            cpuDivider = 0;
+            TotalPpuCycles = 0;
+            TotalCpuCycles = 0;
             frameCount = 0;
             Mem.Reset();
             Cpu.Reset();
@@ -48,22 +57,28 @@ namespace Emu6502
             sw.Start();
         }
 
-        public int Run(int cpuCycles, out bool render)
+        public int Run(int ppuCyclesToRun, out bool render)
         {
             render = false;
 
             if (Cpu.Paused)
-                return cpuCycles;
+                return ppuCyclesToRun;
 
-            while (cpuCycles > 0)
+            while (ppuCyclesToRun > 0)
             {
-                --cpuCycles;
+                --ppuCyclesToRun;
 
                 // CPU clock is 1/3 the PPU clock
                 /*++cpuCycles;
                 if (cpuCycles == 3)
                 {
                     cpuCycles = 0;*/
+
+                ++cpuDivider;
+                if(cpuDivider == 3)
+                {
+                    cpuDivider = 0;
+                    ++TotalCpuCycles;
 
                     if (Cpu.WaitCycles > 0)
                         Cpu.WaitCycles--;
@@ -74,33 +89,29 @@ namespace Emu6502
                         if (Cpu.Paused)
                             break;
                     }
+                }
                 //}
 
-                Ppu.ScanlineCycle+=3;
-                if (Ppu.ScanlineCycle >= Ppu.ClocksPerScanline)
-                {
-                    Ppu.ScanlineCycle -= Ppu.ClocksPerScanline;
-                    Ppu.FinishScanline();
+                Ppu.Tick();
 
-                    if (Ppu.VsyncSignalToMainLoop)
+                if (Ppu.VsyncSignalToMainLoop)
+                {
+                    Ppu.VsyncSignalToMainLoop = false;
+                    ++frameCount;
+                    if (frameCount == 10)
                     {
-                        Ppu.VsyncSignalToMainLoop = false;
-                        ++frameCount;
-                        if (frameCount == 10)
-                        {
-                            float secs = sw.ElapsedTicks / (float)Stopwatch.Frequency;
-                            FPS = frameCount / secs;
-                            sw.Reset();
-                            sw.Start();
-                            frameCount = 0;
-                        }
-                        render =true ;
-                        break;
+                        float secs = sw.ElapsedTicks / (float)Stopwatch.Frequency;
+                        FPS = frameCount / secs;
+                        sw.Reset();
+                        sw.Start();
+                        frameCount = 0;
                     }
+                    render = true;
+                    break;
                 }
             }
 
-            return cpuCycles;
+            return ppuCyclesToRun;
         }
     }
 }

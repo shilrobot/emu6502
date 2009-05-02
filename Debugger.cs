@@ -79,15 +79,15 @@ namespace Emu6502
                 nes.Controller1.Select = state.Buttons.Back == (Microsoft.Xna.Framework.Input.ButtonState.Pressed);
                 nes.Controller1.Left = state.ThumbSticks.Left.X < -deadZone;
                 nes.Controller1.Right = state.ThumbSticks.Left.X > deadZone;
-                nes.Controller1.Up = state.ThumbSticks.Left.Y < -deadZone;
-                nes.Controller1.Down = state.ThumbSticks.Left.Y > deadZone;
+                nes.Controller1.Up = state.ThumbSticks.Left.Y > deadZone;
+                nes.Controller1.Down = state.ThumbSticks.Left.Y < -deadZone;
 
                 double deltaT = (double)sw.ElapsedTicks / (double)Stopwatch.Frequency;
                 sw.Reset();
                 sw.Start();
                 if(deltaT > 0.1f)
                     deltaT = 0.1f;
-                double clockRate = 21477272.0 / 12.0;
+                double clockRate = 21477272.0 / 4.0; // PPU clocks!
                 
                 int cycles = (int)Math.Round(clockRate * deltaT);
                 //Console.WriteLine("{0:0} ms = {1} cycles", deltaT * 1000.0, cycles);

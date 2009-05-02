@@ -185,10 +185,9 @@ PullStatus();
 NPC = PullWord();
 }}
 
-// TODO: Does PHP push the B flag as well? Some 6502's do...
 PHP {{
 //Console.WriteLine("${0:X4}: PHP", PC);
-PushStatus(false);
+PushStatus(true); // PHP writes the B flag as well
 }}
 
 PLP {{
@@ -267,12 +266,12 @@ SP = X;
 
 SED {{
 //Console.WriteLine("${0:X4}: SED", PC);
-// Not implemented on NES
+D=true;
 }}
 
 CLD {{
 //Console.WriteLine("${0:X4}: CLD", PC);
-// Not implemented on NES
+D=false;
 }}
 
 SEI {{

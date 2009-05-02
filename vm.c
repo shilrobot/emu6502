@@ -24,8 +24,8 @@
 						byte addr2_hi = RD(addr1); \
 						addr = (ushort)(addr2_lo | (addr2_hi<<8)); \
 					}
-#define AGEN_INDX	addr = RDW((ushort)(LO+X));
-#define AGEN_INDY	addr = (ushort)(RDW(LO)+Y);
+#define AGEN_INDX	addr = ReadWordZP((ushort)(LO+X));
+#define AGEN_INDY	addr = (ushort)(ReadWordZP(LO)+Y);
 #define AGEN_IMPL
 #define AGEN_REL
 
@@ -59,6 +59,6 @@
 #define WRITE_IMPL
 #define WRITE_REL	// TODO: Hmm
 
-#define BRANCH(cond) if(cond) { byte lo = LO; int offset = (lo <= 127) ? lo : lo - 256; NPC = (ushort)(PC+2+offset); }
+#define BRANCH(cond) if(cond) { WaitCycles++; byte lo = LO; int offset = (lo <= 127) ? lo : lo - 256; NPC = (ushort)(PC+2+offset); }
 
 #include "vm_out.c"

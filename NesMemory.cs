@@ -67,26 +67,26 @@ namespace Emu6502
                 case 0x4000:
                 case 0x5000:
                     {
-                        
+                        byte b = 0;
                         if (addr == 0x4016)
                         {
-                            byte result = (byte)(nes.Controller1.Captured & 0x1);
+                            Console.WriteLine("Controller1 = {0:X}", nes.Controller1.Captured);
+                            b = (byte)(nes.Controller1.Captured & 0x1);
                             nes.Controller1.Captured >>= 1;
-                            return result;
                         }
                         else if (addr == 0x4017)
                         {
-                            byte result = (byte)(nes.Controller2.Captured & 0x1);
+                            b = (byte)(nes.Controller2.Captured & 0x1);
                             nes.Controller2.Captured >>= 1;
-                            return result;
                         }
 
+                        Console.WriteLine("R IO ${0:X4} = ${1:X2}", addr, b);
                         /*if (addr < 0x4020)
                         {
                             //Console.WriteLine("R IO ${0:X4}", addr);
 
                         }*/
-                        return 0;
+                        return b;
                     }
 
                 // Save ram (TODO) -- goes to cartridge
@@ -159,7 +159,7 @@ namespace Emu6502
             }
             else if (addr < 0x4020)
             {
-                //Console.WriteLine("W IO ${0:X4} = ${1:X2}", addr, val);
+                Console.WriteLine("W IO ${0:X4} = ${1:X2}", addr, val);
 
                 // Fake DMA
                 if (addr == 0x4014)
