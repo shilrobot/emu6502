@@ -20,7 +20,7 @@ namespace Emu6502
 
         public void Capture()
         {
-            Console.WriteLine("Controller Status: {0}{1}{2}{3}{4}{5}{6}{7}",
+            /*Console.WriteLine("Controller Status: {0}{1}{2}{3}{4}{5}{6}{7}",
                 A ? "A " : "",
                 B ? "B " : "",
                 Select ? "Select " : "",
@@ -28,7 +28,7 @@ namespace Emu6502
                 Up ? "Up " : "",
                 Down ? "Down " : "",
                 Left ? "Left " : "",
-                Right ? "Right " : "");
+                Right ? "Right " : "");*/
             Captured = 0;
             if (A)      Captured |= 0x01;
             if (B)      Captured |= 0x02;

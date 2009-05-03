@@ -282,7 +282,7 @@ namespace Emu6502
             /*if(data != 0x00 && data != 0x24)
                 Console.WriteLine("W VRAM ${0:X4}=${1:X2}", VramAddr, data);*/
 
-            //Console.WriteLine("W VRAM ${0:X4}=${1:X2}", VramAddr, data);
+            Console.WriteLine("W VRAM ${0:X4}=${1:X2}", VramAddr, data);
 
             if ((PpuCtrl & 0x04) != 0)
                 VramAddr += 0x20;
@@ -653,6 +653,8 @@ namespace Emu6502
             int baseNTY = (PpuCtrl >> 1) & 0x1;
             bool _8x16 = (PpuCtrl & 0x20) != 0;
 
+            /*baseNTX = 0; baseNTY = 0; ScrollX = 0; ScrollY = 0;*/
+
             FillBG(row);
 
             if (enableSprites)
@@ -663,21 +665,23 @@ namespace Emu6502
                     RenderSprites8x8(row, true);
             }
 
+            int scrollY = ScrollY;// % 100; ;// % (30 * 8);
+
             if (enableBG)
             {
-                if (row >= ScreenHeight - ScrollY)
+                if (row >= ScreenHeight - scrollY)
                 {
                     baseNTY ^= 1;
 
-                    RenderBG(row + ScrollY - ScreenHeight, baseNTX, baseNTY, -ScrollX, row);
+                    RenderBG(row + scrollY - ScreenHeight, baseNTX, baseNTY, -ScrollX, row);
                     baseNTX ^= 1;
-                    RenderBG(row + ScrollY - ScreenHeight, baseNTX, baseNTY, -ScrollX + ScreenWidth, row);
+                    RenderBG(row + scrollY - ScreenHeight, baseNTX, baseNTY, -ScrollX + ScreenWidth, row);
                 }
                 else
                 {
-                    RenderBG(row + ScrollY, baseNTX, baseNTY, -ScrollX, row);
+                    RenderBG(row + scrollY, baseNTX, baseNTY, -ScrollX, row);
                     baseNTX ^= 1;
-                    RenderBG(row + ScrollY, baseNTX, baseNTY, -ScrollX + ScreenWidth, row);                    
+                    RenderBG(row + scrollY, baseNTX, baseNTY, -ScrollX + ScreenWidth, row);                    
                 }
             }
 

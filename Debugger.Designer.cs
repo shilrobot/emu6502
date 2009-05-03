@@ -57,6 +57,7 @@
             this.gotoBtn = new System.Windows.Forms.Button();
             this.showPCBtn = new System.Windows.Forms.Button();
             this.disassembly2 = new Emu6502.DisassemblyWindow();
+            this.ppuDebug = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -352,11 +353,23 @@
             this.disassembly2.TabIndex = 1;
             this.disassembly2.Text = "disassemblyWindow1";
             // 
+            // ppuDebug
+            // 
+            this.ppuDebug.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.ppuDebug.Location = new System.Drawing.Point(408, 488);
+            this.ppuDebug.Name = "ppuDebug";
+            this.ppuDebug.Size = new System.Drawing.Size(146, 29);
+            this.ppuDebug.TabIndex = 6;
+            this.ppuDebug.Text = "PPU Debug";
+            this.ppuDebug.UseVisualStyleBackColor = true;
+            this.ppuDebug.Click += new System.EventHandler(this.ppuDebug_Click);
+            // 
             // Debugger
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(865, 529);
+            this.Controls.Add(this.ppuDebug);
             this.Controls.Add(this.showPCBtn);
             this.Controls.Add(this.gotoBtn);
             this.Controls.Add(this.redisasm);
@@ -409,5 +422,6 @@
         private System.Windows.Forms.Button redisasm;
         private System.Windows.Forms.Button gotoBtn;
         private System.Windows.Forms.Button showPCBtn;
+        private System.Windows.Forms.Button ppuDebug;
     }
 }

@@ -95,6 +95,12 @@
     <Compile Include="NesMemory.cs" />
     <Compile Include="NROM.cs" />
     <Compile Include="Ppu.cs" />
+    <Compile Include="PpuDebug.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PpuDebug.Designer.cs">
+      <DependentUpon>PpuDebug.cs</DependentUpon>
+    </Compile>
     <Compile Include="PpuOutput.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -117,6 +123,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Breakpoints.resx">
       <DependentUpon>Breakpoints.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PpuDebug.resx">
+      <DependentUpon>PpuDebug.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="PpuOutput.resx">
       <DependentUpon>PpuOutput.cs</DependentUpon>

@@ -264,5 +264,11 @@ namespace Emu6502
         {
             disassembly2.SelectAddress(nes.Cpu.PC);
         }
+
+        private void ppuDebug_Click(object sender, EventArgs e)
+        {
+            PpuDebug dbg = new PpuDebug(this.nes.Ppu);
+            dbg.Show();
+        }
     }
 }

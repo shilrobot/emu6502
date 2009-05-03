@@ -164,7 +164,7 @@ namespace Emu6502
             }
             else if (addr < 0x4020)
             {
-                Console.WriteLine("W IO ${0:X4} = ${1:X2}", addr, val);
+                //Console.WriteLine("W IO ${0:X4} = ${1:X2}", addr, val);
 
                 // Fake DMA
                 if (addr == 0x4014)
