@@ -807,8 +807,8 @@ namespace Emu6502
                     RenderSprites8x8(row, false);
             }
 
-            Framebuffer[ScreenWidth*row + ScrollX] = 0xFF << 24 | 0xFF0000;
-            Framebuffer[ScreenWidth * row + ScrollY] = 0xFF << 24 | 0x00FF00;
+            //Framebuffer[ScreenWidth*row + ScrollX] = 0xFF << 24 | 0xFF0000;
+            //Framebuffer[ScreenWidth * row + ScrollY] = 0xFF << 24 | 0x00FF00;
         }
 
         private void Vsync()
