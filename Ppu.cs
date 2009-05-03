@@ -53,6 +53,12 @@ namespace Emu6502
         private byte[] Nametable4;
         public MirrorType Mirroring { get; private set; }
 
+        // NEW STUFF
+        private bool latch;
+        private int loopyT;
+        private int loopyV;
+        private int fineX;
+
         public Ppu(Nes nes)
         {
             this.nes = nes;
@@ -77,6 +83,10 @@ namespace Emu6502
             ScanlineIndex = 0;
             ScanlineCycle = 0;
             SpriteHitFlag = false;
+
+            latch = false;
+            loopyT = loopyV = 0;
+            fineX = 0;
 
             // TODO: This is mapper's job
             //PatternTables = (nes.Rom.ChrRomBanks.Length == 0) ? new byte[8*1024] : nes.Rom.ChrRomBanks[0];
@@ -135,10 +145,14 @@ namespace Emu6502
             //Console.WriteLine("PPUCTRL = ${0:X2} PC = ${1:X4}", val, nes.Cpu.PC);
             PpuCtrl = val;
 
-            if ((PpuCtrl & 0x80) != 0)
+            /*if ((PpuCtrl & 0x80) != 0)
                 fs.WriteLine("{0},{1},VBL NMI Enabled", nes.TotalCpuCycles, VsyncFlag?1:0);
             else
-                fs.WriteLine("{0},{1},VBL NMI Enabled", nes.TotalCpuCycles, VsyncFlag ? 1 : 0);
+                fs.WriteLine("{0},{1},VBL NMI Enabled", nes.TotalCpuCycles, VsyncFlag ? 1 : 0);*/
+
+            // Set V&H in T
+            loopyT &= ~0xC00;
+            loopyT |= (val & 0x3) << 10;
         }
         
         // $2001 PPUMASK (W)
@@ -175,6 +189,7 @@ namespace Emu6502
                 ;// Console.WriteLine("Resetting VRAM latch");
             VramAddrLatch = 0;*/
             PpuLatch = false;
+            latch = false;
             /*ScrollX = 0;
             VramAddr = 0;*/
 
@@ -192,9 +207,58 @@ namespace Emu6502
         public byte ReadOAMData() { return SpriteMem[OAMAddr]; }
         public void WriteOAMData(byte val) { SpriteMem[OAMAddr++] = val; }
 
+        private void DumpPpuReg(int reg)
+        {
+            int coarseX = reg & 0x1f;
+            int coarseY = (reg >> 5) & 0x1f;
+            int fineY = (reg >> 12) & 0x7;
+            int H = (reg >> 10) & 0x1;
+            int V = (reg >> 11) & 0x1;
+            int scrlX = (byte)((coarseX) << 3 | fineX);
+            int scrlY = (byte)((coarseY) << 3 | fineY);
+            Console.WriteLine("REG=${7:X4}: fineY={0} H={1} V={2} coarseY={3} coarseX={4} ScrollX={5} ScrollY={6}",
+                                fineY,
+                                H,
+                                V,
+                                coarseY,
+                                coarseX,
+                                scrlX,
+                                scrlY,
+                                reg);
+        }
+
         // $2005 PPUSCROLL (W)
         public void WritePpuScroll(byte val)
         {
+            // 1st write: SCROLLX
+            if (!latch)
+            {
+                Console.WriteLine("$2005/1 = ${0:X2}", val);
+
+                loopyT &= ~0x1F;
+                loopyT |= (val >> 3);
+
+                fineX = val & 0x7;
+
+                /*Console.WriteLine("T:");
+                DumpPpuReg(loopyT);*/
+            }
+            // 2nd write: SCROLLY
+            else
+            {
+                Console.WriteLine("$2005/2 = ${0:X2}", val);
+
+                loopyT &= ~0x73E0;
+                loopyT |= (val >> 3) << 5; // todo: simplify?
+                loopyT |= (val & 0x7) << 12;
+
+                /*Console.WriteLine("T:");
+                DumpPpuReg(loopyT);*/
+            }
+
+            latch = !latch;
+
+            /*
             PpuCtrl &= 0xFC;
             if (!PpuLatch)
             {
@@ -210,11 +274,38 @@ namespace Emu6502
             //ScrollLatch++;
             PpuLatch = !PpuLatch;
             //ScrollLatch = (ScrollLatch + 1) % 2;
+             * */
         }
 
         // $2006 PPUADDR (W)
         public void WritePpuAddr(byte val)
         {
+            if (!latch)
+            {
+                Console.WriteLine("$2006/1 = ${0:X2}", val);
+
+                /*loopyT &= ~0xFF00;
+                loopyT |= (val & 0x3F) << 8;*/
+                loopyT &= ~0xFF00;
+                loopyT |= (val & 0xFF) << 8;
+                
+                DumpPpuReg(loopyT);
+            }
+            else
+            {
+                Console.WriteLine("$2006/2 = ${0:X2}", val);
+
+                loopyT &= ~0xFF;
+                loopyT |= val;
+
+                loopyV = loopyT;
+
+                DumpPpuReg(loopyT);
+            }
+
+            latch = !latch;
+
+#if false
             /*VramAddr <<= 8;
             VramAddr |= val;*/
             if (!PpuLatch)
@@ -244,43 +335,48 @@ namespace Emu6502
                 Console.WriteLine("Excess PPU address latch: ${0:X2}", val);*/
 
             PpuLatch = !PpuLatch;
+#endif
         }
 
         // $2007 PPUDATA (R/W)
         public byte ReadPpuData()
         {
+            int vramAddr = loopyV & 0x3FFF;
+
             byte result;
 
             // Palette read
-            if (VramAddr >= 0x3f00 && VramAddr < 0x4000)
+            if (vramAddr >= 0x3f00)
             {
-                DelayedVramRead = Read(0x2F00 | (VramAddr & 0xFF));
-                result = Read(VramAddr);
+                DelayedVramRead = Read(0x2f00 | (vramAddr & 0xFF));
+                result = Read(vramAddr);
                 //Console.WriteLine("R VRAM (pal) ${0:X4}=${1:X2}", VramAddr, result);
             }
             else
             {
                 result = DelayedVramRead;
-                DelayedVramRead = Read(VramAddr);
+                DelayedVramRead = Read(vramAddr);
                 //Console.WriteLine("R VRAM ${0:X4}=${1:X2}", VramAddr, result);
             }
 
-            //Console.WriteLine("R VRAM ${0:X4}=${1:X2}", VramAddr, DelayedVramRead);
 
             if ((PpuCtrl & 0x04) != 0)
-                VramAddr += 0x20;
+                vramAddr += 0x20;
             else
-                VramAddr++;
+                vramAddr++;
 
-            VramAddr &= 0x3FFF;
+            loopyV &= ~0x3FFF;
+            loopyV |= (vramAddr & 0x3FFF);
 
             return result;
         }
 
         public void WritePpuData(byte data)
         {
+            int vramAddr = loopyV & 0x3FFF;
+
             //nes.Cpu.Paused = true;
-            Write(VramAddr, data);
+            Write(vramAddr, data);
 
             /*if(data != 0x00 && data != 0x24)
                 Console.WriteLine("W VRAM ${0:X4}=${1:X2}", VramAddr, data);*/
@@ -288,10 +384,12 @@ namespace Emu6502
             //Console.WriteLine("W VRAM ${0:X4}=${1:X2}", VramAddr, data);
 
             if ((PpuCtrl & 0x04) != 0)
-                VramAddr += 0x20;
+                vramAddr += 0x20;
             else
-                VramAddr++;
-            VramAddr &= 0x3FFF;
+                vramAddr++;
+
+            loopyV &= ~0x3FFF;
+            loopyV |= (vramAddr & 0x3FFF);
         }
 
         public int MirrorHigh(int addr)
@@ -307,6 +405,7 @@ namespace Emu6502
         public byte Read(int addr)
         {
             addr = addr & 0x3FFF;
+            //Console.WriteLine("R VRAM ${0:X4}", addr);
 
             if(addr >= 0 && addr < 0x2000)
             {
@@ -326,7 +425,9 @@ namespace Emu6502
 
         public void Write(int addr, byte val)
         {
+
             addr = addr & 0x3FFF;
+            //Console.WriteLine("W VRAM ${0:X4}=${1:X2}", addr, val);
 
             if(addr >= 0 && addr < 0x2000)
             {
@@ -340,8 +441,8 @@ namespace Emu6502
                 // TODO: Proper mirroring here
                 /*int nameAttrAddr = addr & 0xFFF;
                 NameAttributeTables[nameAttrAddr] = val;*/
-                if ((addr & 0xFF) == 0)
-                    Console.WriteLine("W VRAM ${0:X4} when Mirroring={1}", addr, Mirroring);
+                /*if ((addr & 0xFF) == 0)
+                    Console.WriteLine("W VRAM ${0:X4} when Mirroring={1}", addr, Mirroring);*/
                 NameAttributeTables[MirrorHigh(addr)][MirrorLow(addr)] = val;
             }
             else// if(addr >= 0x3F00 && addr < 0x4000)
@@ -384,8 +485,6 @@ namespace Emu6502
 
             //int nametableStart = 0x2000;
 
-            Framebuffer[rowStart + ScrollX] = 0xFF << 24 | 0xFF0000;
-            Framebuffer[rowStart + ScrollY] = 0xFF << 24 | 0x00FF00;
 
             int mirrorHigh = ntY << 1 | ntX;//MirrorHigh(nameTableOffset);
 
@@ -653,11 +752,19 @@ namespace Emu6502
 
         private void RenderRow(int row)
         {
+            if ((PpuMask & 0x18) != 0)
+            {
+                loopyV &= ~0x41F;
+                loopyV |= (loopyT & 0x41F);
+            }
+
             bool enableBG = (PpuMask & 0x08) !=0;
             bool enableSprites = (PpuMask & 0x10)!=0;
 
-            int baseNTX = PpuCtrl & 0x1;
-            int baseNTY = (PpuCtrl >> 1) & 0x1;
+            int baseNTX = (loopyV & (1 << 10)) != 0 ? 1 : 0;
+            int baseNTY = (loopyV & (1 << 11)) != 0 ? 1 : 0;
+            //int baseNTX = PpuCtrl & 0x1;
+            //int baseNTY = (PpuCtrl >> 1) & 0x1;
             bool _8x16 = (PpuCtrl & 0x20) != 0;
 
             /*baseNTX = 0; baseNTY = 0; ScrollX = 0; ScrollY = 0;*/
@@ -699,6 +806,9 @@ namespace Emu6502
                 else
                     RenderSprites8x8(row, false);
             }
+
+            Framebuffer[ScreenWidth*row + ScrollX] = 0xFF << 24 | 0xFF0000;
+            Framebuffer[ScreenWidth * row + ScrollY] = 0xFF << 24 | 0x00FF00;
         }
 
         private void Vsync()
@@ -723,10 +833,23 @@ namespace Emu6502
                 VsyncFlag = false;
             }*/
 
+
             /*ScanlineCycle++;
             if (ScanlineCycle >= ClocksPerScanline)
             {*/
                 int row = ScanlineIndex - VsyncScanlines;
+
+                // If BG & sprites are enabled, V = T @ scanline 0
+                
+                if ((PpuMask & 0x18) != 0 && row == 0)
+                    loopyV = loopyT;
+
+                int coarseX = loopyV & 0x1F;
+                int coarseY = (loopyV >> 5) & 0x1f;
+                int fineY = (loopyV >> 12) & 0x7;
+                ScrollX = (byte)((coarseX) << 3 | fineX);
+                ScrollY = (byte)((coarseY) << 3 | fineY);
+
                 if (row >= 0 && row < ScreenHeight)
                     RenderRow(row);
                 // hack hack
