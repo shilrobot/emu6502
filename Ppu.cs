@@ -96,7 +96,7 @@ namespace Emu6502
             Nametable3 = new byte[1024];
             Nametable4 = new byte[1024];
             NameAttributeTables = new byte[4][];
-            SetMirroring(nes.Rom.MirrorType);
+            SetMirroring(MirrorType.Vertical);//nes.Rom.MirrorType);
 
             Palette = new byte[32];
             SpriteMem = new byte[256];
@@ -106,37 +106,39 @@ namespace Emu6502
         {
             Mirroring = type;
 
-            if (nes.Rom.MirrorType == MirrorType.Horizontal)
+            if (type == MirrorType.Horizontal)
             {
                 NameAttributeTables[0] = NameAttributeTables[1] = Nametable1;
                 NameAttributeTables[2] = NameAttributeTables[3] = Nametable2;
             }
-            else if (nes.Rom.MirrorType == MirrorType.Vertical)
+            else if (type == MirrorType.Vertical)
             {
                 NameAttributeTables[0] = NameAttributeTables[2] = Nametable1;
                 NameAttributeTables[1] = NameAttributeTables[3] = Nametable2;
             }
-            else if (nes.Rom.MirrorType == MirrorType.FourScreen)
+            else if (type == MirrorType.FourScreen)
             {
                 NameAttributeTables[0] = Nametable1;
                 NameAttributeTables[1] = Nametable2;
                 NameAttributeTables[2] = Nametable3;
                 NameAttributeTables[3] = Nametable4;
             }
-            else if (nes.Rom.MirrorType == MirrorType.SingleScreenLower)
+            else if (type == MirrorType.SingleScreenLower)
             {
                 NameAttributeTables[0] = 
                 NameAttributeTables[1] =
                 NameAttributeTables[2] =
                 NameAttributeTables[3] = Nametable1;
             }
-            else if (nes.Rom.MirrorType == MirrorType.SingleScreenUpper)
+            else if (type == MirrorType.SingleScreenUpper)
             {
                 NameAttributeTables[0] =
                 NameAttributeTables[1] =
                 NameAttributeTables[2] =
                 NameAttributeTables[3] = Nametable2;
             }
+
+            Console.WriteLine("Mirroring={0} ({1})", type, IdentifyBanks());
         }
 
         // $2000 PPUCTRL (W)
@@ -216,7 +218,7 @@ namespace Emu6502
             int V = (reg >> 11) & 0x1;
             int scrlX = (byte)((coarseX) << 3 | fineX);
             int scrlY = (byte)((coarseY) << 3 | fineY);
-            Console.WriteLine("REG=${7:X4}: fineY={0} H={1} V={2} coarseY={3} coarseX={4} ScrollX={5} ScrollY={6}",
+            /*Console.WriteLine("REG=${7:X4}: fineY={0} H={1} V={2} coarseY={3} coarseX={4} ScrollX={5} ScrollY={6}",
                                 fineY,
                                 H,
                                 V,
@@ -224,7 +226,7 @@ namespace Emu6502
                                 coarseX,
                                 scrlX,
                                 scrlY,
-                                reg);
+                                reg);*/
         }
 
         // $2005 PPUSCROLL (W)
@@ -233,7 +235,7 @@ namespace Emu6502
             // 1st write: SCROLLX
             if (!latch)
             {
-                Console.WriteLine("$2005/1 = ${0:X2}", val);
+                //Console.WriteLine("$2005/1 = ${0:X2}", val);
 
                 loopyT &= ~0x1F;
                 loopyT |= (val >> 3);
@@ -246,7 +248,7 @@ namespace Emu6502
             // 2nd write: SCROLLY
             else
             {
-                Console.WriteLine("$2005/2 = ${0:X2}", val);
+                //Console.WriteLine("$2005/2 = ${0:X2}", val);
 
                 loopyT &= ~0x73E0;
                 loopyT |= (val >> 3) << 5; // todo: simplify?
@@ -282,7 +284,7 @@ namespace Emu6502
         {
             if (!latch)
             {
-                Console.WriteLine("$2006/1 = ${0:X2}", val);
+                //Console.WriteLine("$2006/1 = ${0:X2}", val);
 
                 /*loopyT &= ~0xFF00;
                 loopyT |= (val & 0x3F) << 8;*/
@@ -293,7 +295,7 @@ namespace Emu6502
             }
             else
             {
-                Console.WriteLine("$2006/2 = ${0:X2}", val);
+                //Console.WriteLine("$2006/2 = ${0:X2}", val);
 
                 loopyT &= ~0xFF;
                 loopyT |= val;
@@ -392,6 +394,29 @@ namespace Emu6502
             loopyV |= (vramAddr & 0x3FFF);
         }
 
+        public string IdentifyBank(int addr)
+        {
+            int high = MirrorHigh(addr);
+            byte[] bank = NameAttributeTables[high];
+            if (bank == Nametable1)
+                return "A";
+            else if (bank == Nametable2)
+                return "B";
+            else if (bank == Nametable3)
+                return "C";
+            else
+                return "D";
+        }
+
+        public string IdentifyBanks()
+        {
+            return IdentifyBank(0x2000) +
+                IdentifyBank(0x2400) +
+                IdentifyBank(0x2800) +
+                IdentifyBank(0x2C00);
+        }
+
+
         public int MirrorHigh(int addr)
         {
             return (addr & 0xC00) >> 10;
@@ -414,7 +439,10 @@ namespace Emu6502
             else if(addr >= 0x2000 && addr < 0x3F00)
             {
                 //int nameAttrAddr = addr & 0x0FFF;
-                return NameAttributeTables[MirrorHigh(addr)][MirrorLow(addr)];
+                byte data= NameAttributeTables[MirrorHigh(addr)][MirrorLow(addr)];
+                if ((addr & 0x3FF) <= 1) 
+                    Console.WriteLine("R VRAM ${0:X4}=${1:X2} Mirroring={2} Bank={3} of {4}", addr, data, Mirroring, IdentifyBank(addr), IdentifyBanks());
+                return data;
             }
             else// if(addr >= 0x3F00 && addr < 0x4000)
             {
@@ -441,8 +469,9 @@ namespace Emu6502
                 // TODO: Proper mirroring here
                 /*int nameAttrAddr = addr & 0xFFF;
                 NameAttributeTables[nameAttrAddr] = val;*/
-                /*if ((addr & 0xFF) == 0)
-                    Console.WriteLine("W VRAM ${0:X4} when Mirroring={1}", addr, Mirroring);*/
+                //if ((addr & 0xFF) == 0)
+                if ((addr & 0x3FF) <= 1)
+                    Console.WriteLine("R VRAM ${0:X4}=${1:X2} Mirroring={2} Bank={3} of {4}", addr, val, Mirroring, IdentifyBank(addr), IdentifyBanks());
                 NameAttributeTables[MirrorHigh(addr)][MirrorLow(addr)] = val;
             }
             else// if(addr >= 0x3F00 && addr < 0x4000)

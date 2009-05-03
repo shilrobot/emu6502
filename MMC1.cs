@@ -104,9 +104,10 @@ namespace Emu6502
                 else if (mirrorMode == 1)
                     mirrorType = MirrorType.SingleScreenUpper;
                 else if (mirrorMode == 2)
-                    mirrorType = MirrorType.Horizontal;
-                else
                     mirrorType = MirrorType.Vertical;
+                else
+                    mirrorType = MirrorType.Horizontal;
+                //mirrorType = MirrorType.FourScreen;
 
                 nes.Ppu.SetMirroring(mirrorType);
 
