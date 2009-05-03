@@ -73,14 +73,14 @@ namespace Emu6502
             }
         }
 
-        private void Disassemble()
+        public void Disassemble()
         {
             if (nes == null)
                 return;
 
             decodedInstrs.Clear();
             decodeMap.Clear();
-            int addr = 0x8000;
+            int addr = 0x0000;
             while (addr <= 0xFFFF)
             {
                 int count = 0x10000 - addr;
@@ -239,6 +239,7 @@ namespace Emu6502
 
         protected override void OnMouseDown(MouseEventArgs e)
         {
+            Focus();
             mouseDown = true;
             SelectPosition(e.X, e.Y);
             base.OnMouseDown(e);

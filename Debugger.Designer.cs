@@ -53,6 +53,9 @@
             this.interruptReset = new System.Windows.Forms.ToolStripMenuItem();
             this.interruptNMI = new System.Windows.Forms.ToolStripMenuItem();
             this.interruptIRQ = new System.Windows.Forms.ToolStripMenuItem();
+            this.redisasm = new System.Windows.Forms.Button();
+            this.gotoBtn = new System.Windows.Forms.Button();
+            this.showPCBtn = new System.Windows.Forms.Button();
             this.disassembly2 = new Emu6502.DisassemblyWindow();
             this.groupBox1.SuspendLayout();
             this.menuStrip1.SuspendLayout();
@@ -302,6 +305,39 @@
             this.interruptIRQ.Text = "&IRQ";
             this.interruptIRQ.Click += new System.EventHandler(this.interruptIRQ_Click);
             // 
+            // redisasm
+            // 
+            this.redisasm.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.redisasm.Location = new System.Drawing.Point(12, 488);
+            this.redisasm.Name = "redisasm";
+            this.redisasm.Size = new System.Drawing.Size(135, 29);
+            this.redisasm.TabIndex = 3;
+            this.redisasm.Text = "Re-Disassemble";
+            this.redisasm.UseVisualStyleBackColor = true;
+            this.redisasm.Click += new System.EventHandler(this.redisasm_Click);
+            // 
+            // gotoBtn
+            // 
+            this.gotoBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.gotoBtn.Location = new System.Drawing.Point(256, 488);
+            this.gotoBtn.Name = "gotoBtn";
+            this.gotoBtn.Size = new System.Drawing.Size(146, 29);
+            this.gotoBtn.TabIndex = 4;
+            this.gotoBtn.Text = "Go to address...";
+            this.gotoBtn.UseVisualStyleBackColor = true;
+            this.gotoBtn.Click += new System.EventHandler(this.gotoBtn_Click);
+            // 
+            // showPCBtn
+            // 
+            this.showPCBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.showPCBtn.Location = new System.Drawing.Point(153, 488);
+            this.showPCBtn.Name = "showPCBtn";
+            this.showPCBtn.Size = new System.Drawing.Size(97, 29);
+            this.showPCBtn.TabIndex = 5;
+            this.showPCBtn.Text = "Show PC";
+            this.showPCBtn.UseVisualStyleBackColor = true;
+            this.showPCBtn.Click += new System.EventHandler(this.showPCBtn_Click);
+            // 
             // disassembly2
             // 
             this.disassembly2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
@@ -311,7 +347,7 @@
             this.disassembly2.Location = new System.Drawing.Point(0, 27);
             this.disassembly2.Name = "disassembly2";
             this.disassembly2.Nes = null;
-            this.disassembly2.Size = new System.Drawing.Size(569, 502);
+            this.disassembly2.Size = new System.Drawing.Size(569, 455);
             this.disassembly2.StartAddress = 0;
             this.disassembly2.TabIndex = 1;
             this.disassembly2.Text = "disassemblyWindow1";
@@ -321,6 +357,9 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(865, 529);
+            this.Controls.Add(this.showPCBtn);
+            this.Controls.Add(this.gotoBtn);
+            this.Controls.Add(this.redisasm);
             this.Controls.Add(this.disassembly2);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.menuStrip1);
@@ -367,5 +406,8 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.ToolStripMenuItem debugBreakpoints;
         private DisassemblyWindow disassembly2;
+        private System.Windows.Forms.Button redisasm;
+        private System.Windows.Forms.Button gotoBtn;
+        private System.Windows.Forms.Button showPCBtn;
     }
 }

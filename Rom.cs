@@ -15,6 +15,8 @@ namespace Emu6502
     {
         Horizontal,
         Vertical,
+        SingleScreenLower,
+        SingleScreenUpper,
         FourScreen
     }
 

@@ -34,6 +34,8 @@ namespace Emu6502
         //private int ignoreOpcodes = 0;
         public int WaitCycles = 0;
 
+        private List<ushort> PCHistory = new List<ushort>();
+
         public Chip6502(IMemory mem)
         {
             Mem = mem;
@@ -171,8 +173,22 @@ namespace Emu6502
                 C ? 1 : 0);*/
         }
 
+        private void DumpPCHistory()
+        {
+            Console.WriteLine("PC history, oldest first:");
+            foreach (ushort pc in PCHistory)
+                Console.WriteLine("PC=${0:X4}", pc);
+        }
+
         public void SetPC(ushort newPC)
         {
+            /*if ((PC & 0xFF00) != (newPC & 0xFF00))
+            {
+                PCHistory.Add(PC);
+                PCHistory.Add(newPC);
+                if (PCHistory.Count > 64)
+                    PCHistory.RemoveAt(0);
+            }*/
             PC = newPC;
             if (Breakpoints.GetBreakpoint(PC) != null || SingleStep)
             {

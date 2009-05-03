@@ -53,6 +53,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AddressEntryDlg.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AddressEntryDlg.Designer.cs">
+      <DependentUpon>AddressEntryDlg.cs</DependentUpon>
+    </Compile>
     <Compile Include="BreakpointManager.cs" />
     <Compile Include="Chip6502.cs" />
     <Compile Include="Chip6502_Tick.cs" />
@@ -84,6 +90,7 @@
     </Compile>
     <Compile Include="IMemory.cs" />
     <Compile Include="Mapper.cs" />
+    <Compile Include="MMC1.cs" />
     <Compile Include="Nes.cs" />
     <Compile Include="NesMemory.cs" />
     <Compile Include="NROM.cs" />
@@ -96,6 +103,9 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="AddressEntryDlg.resx">
+      <DependentUpon>AddressEntryDlg.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Debugger.resx">
       <DependentUpon>Debugger.cs</DependentUpon>
     </EmbeddedResource>

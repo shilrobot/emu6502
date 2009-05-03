@@ -32,7 +32,9 @@ namespace Emu6502
             //outputWindow.Hide();
             disassembly2.Nes = nes;
             disassembly2.Update();
+            disassembly2.SelectAddress(nes.Cpu.PC);
             sw.Start();
+            this.Focus();
         }
 
         private void UpdateTitle()
@@ -87,7 +89,7 @@ namespace Emu6502
                 sw.Start();
                 if(deltaT > 0.1f)
                     deltaT = 0.1f;
-                double clockRate = 21477272.0 / 4.0; // PPU clocks!
+                double clockRate = 341 * 262 * 60;
                 
                 int cycles = (int)Math.Round(clockRate * deltaT);
                 //Console.WriteLine("{0:0} ms = {1} cycles", deltaT * 1000.0, cycles);
@@ -241,6 +243,26 @@ namespace Emu6502
         private void Debugger_FormClosed(object sender, FormClosedEventArgs e)
         {
             nes.Cpu.SaveEncounteredInstructions();
+        }
+
+        private void redisasm_Click(object sender, EventArgs e)
+        {
+            disassembly2.Disassemble();
+            disassembly2.SelectAddress(nes.Cpu.PC);
+        }
+
+        private void gotoBtn_Click(object sender, EventArgs e)
+        {
+            AddressEntryDlg dlg = new AddressEntryDlg();
+            if (dlg.ShowDialog() == DialogResult.OK)
+            {
+                disassembly2.SelectAddress((ushort)dlg.Address);
+            }
+        }
+
+        private void showPCBtn_Click(object sender, EventArgs e)
+        {
+            disassembly2.SelectAddress(nes.Cpu.PC);
         }
     }
 }

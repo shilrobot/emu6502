@@ -47,6 +47,11 @@ namespace Emu6502
 
         private StreamWriter fs = new StreamWriter("nmi.csv");
 
+        private byte[] Nametable1;
+        private byte[] Nametable2;
+        private byte[] Nametable3;
+        private byte[] Nametable4;
+
         public Ppu(Nes nes)
         {
             this.nes = nes;
@@ -75,33 +80,56 @@ namespace Emu6502
             // TODO: This is mapper's job
             //PatternTables = (nes.Rom.ChrRomBanks.Length == 0) ? new byte[8*1024] : nes.Rom.ChrRomBanks[0];
             //NameAttributeTables = new byte[4096];
+            Nametable1 = new byte[1024];
+            Nametable2 = new byte[1024];
+            Nametable3 = new byte[1024];
+            Nametable4 = new byte[1024];
             NameAttributeTables = new byte[4][];
-            if (nes.Rom.MirrorType == MirrorType.Horizontal)
-            {
-                NameAttributeTables[0] = NameAttributeTables[1] = new Byte[1024];
-                NameAttributeTables[2] = NameAttributeTables[3] = new Byte[1024];
-            }
-            else if (nes.Rom.MirrorType == MirrorType.Vertical)
-            {
-                NameAttributeTables[0] = NameAttributeTables[2] = new Byte[1024];
-                NameAttributeTables[1] = NameAttributeTables[3] = new Byte[1024];
-            }
-            else if (nes.Rom.MirrorType == MirrorType.FourScreen)
-            {
-                NameAttributeTables[0] = new Byte[1024];
-                NameAttributeTables[1] = new Byte[1024];
-                NameAttributeTables[2] = new Byte[1024];
-                NameAttributeTables[3] = new Byte[1024];
-            }
+            SetMirroring(nes.Rom.MirrorType);
 
             Palette = new byte[32];
             SpriteMem = new byte[256];
         }
 
+        public void SetMirroring(MirrorType type)
+        {
+            if (nes.Rom.MirrorType == MirrorType.Horizontal)
+            {
+                NameAttributeTables[0] = NameAttributeTables[1] = Nametable1;
+                NameAttributeTables[2] = NameAttributeTables[3] = Nametable2;
+            }
+            else if (nes.Rom.MirrorType == MirrorType.Vertical)
+            {
+                NameAttributeTables[0] = NameAttributeTables[2] = Nametable1;
+                NameAttributeTables[1] = NameAttributeTables[3] = Nametable2;
+            }
+            else if (nes.Rom.MirrorType == MirrorType.FourScreen)
+            {
+                NameAttributeTables[0] = Nametable1;
+                NameAttributeTables[1] = Nametable2;
+                NameAttributeTables[2] = Nametable3;
+                NameAttributeTables[3] = Nametable4;
+            }
+            else if (nes.Rom.MirrorType == MirrorType.SingleScreenLower)
+            {
+                NameAttributeTables[0] = 
+                NameAttributeTables[1] =
+                NameAttributeTables[2] =
+                NameAttributeTables[3] = Nametable1;
+            }
+            else if (nes.Rom.MirrorType == MirrorType.SingleScreenUpper)
+            {
+                NameAttributeTables[0] =
+                NameAttributeTables[1] =
+                NameAttributeTables[2] =
+                NameAttributeTables[3] = Nametable2;
+            }
+        }
+
         // $2000 PPUCTRL (W)
         public void WritePpuCtrl(byte val)
         {
-            Console.WriteLine("PPUCTRL = ${0:X2} PC = ${1:X4}", val, nes.Cpu.PC);
+            //Console.WriteLine("PPUCTRL = ${0:X2} PC = ${1:X4}", val, nes.Cpu.PC);
             PpuCtrl = val;
 
             if ((PpuCtrl & 0x80) != 0)
@@ -113,7 +141,7 @@ namespace Emu6502
         // $2001 PPUMASK (W)
         public void WritePpuMask(byte val)
         {
-            Console.WriteLine("PPUMASK = ${0:X2} PC = ${1:X4}", val, nes.Cpu.PC);
+            //Console.WriteLine("PPUMASK = ${0:X2} PC = ${1:X4}", val, nes.Cpu.PC);
             PpuMask = val;
         }
 
@@ -225,13 +253,13 @@ namespace Emu6502
             {
                 DelayedVramRead = Read(0x2F00 | (VramAddr & 0xFF));
                 result = Read(VramAddr);
-                Console.WriteLine("R VRAM (pal) ${0:X4}=${1:X2}", VramAddr, result);
+                //Console.WriteLine("R VRAM (pal) ${0:X4}=${1:X2}", VramAddr, result);
             }
             else
             {
                 result = DelayedVramRead;
                 DelayedVramRead = Read(VramAddr);
-                Console.WriteLine("R VRAM ${0:X4}=${1:X2}", VramAddr, result);
+                //Console.WriteLine("R VRAM ${0:X4}=${1:X2}", VramAddr, result);
             }
 
             //Console.WriteLine("R VRAM ${0:X4}=${1:X2}", VramAddr, DelayedVramRead);

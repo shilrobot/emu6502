@@ -1492,6 +1492,7 @@ break;
                             if (ignoreOpcodes == 10)
                                 if(false) Console.WriteLine("Suppressing further invalid opcode messages");
                         }*/
+                        DumpPCHistory();
                         Console.WriteLine("Invalid Opcode ${0:X2} @ ${1:X4}: treating as NOP", opcode, PC);
                         this.Paused = true;
 

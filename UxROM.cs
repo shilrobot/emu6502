@@ -19,7 +19,7 @@ namespace Emu6502
         {
             nes.Ppu.PatternTables = new byte[8 * 1024];// nes.Rom.ChrRomBanks[0];
             // TODO: What default?
-            PrgRomBank0 = nes.Rom.PrgRomBanks[nes.Rom.PrgRomBanks.Length - 1];
+            PrgRomBank0 = nes.Rom.PrgRomBanks[0];
             PrgRomBank1 = nes.Rom.PrgRomBanks[nes.Rom.PrgRomBanks.Length - 1];
         }
 

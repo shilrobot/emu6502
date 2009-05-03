@@ -82,7 +82,7 @@ namespace Emu6502
                             nes.Controller2.Captured >>= 1;
                         }
 
-                        Console.WriteLine("R IO ${0:X4} = ${1:X2}", addr, b);
+                        //Console.WriteLine("R IO ${0:X4} = ${1:X2}", addr, b);
                         /*if (addr < 0x4020)
                         {
                             //Console.WriteLine("R IO ${0:X4}", addr);

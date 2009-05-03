@@ -44,10 +44,14 @@ namespace Emu6502
                 case 0:
                     Mapper = new NROM(this);
                     break;
+                case 1:
+                    Mapper = new MMC1(this);
+                    break;
                 case 2:
                     Mapper = new UxROM(this);
                     break;
                 default:
+                    // TODO: Cleaner...
                     throw new Exception("Unknown mapper");
             }
 
