@@ -38,7 +38,7 @@ namespace Emu6502
         {
             Mem = mem;
             Breakpoints = new BreakpointManager();
-            Reset();
+            //Reset();
         }
 
         public string DumpRegs()

@@ -21,6 +21,7 @@ namespace Emu6502
     // Reads in a .NES format ROM file
     public class Rom
     {
+        public int MapperNumber;
         public byte[][] PrgRomBanks;
         public byte[][] ChrRomBanks;
         public byte[][] RamBanks;
@@ -66,6 +67,7 @@ namespace Emu6502
                 byte rcb1 = r.ReadByte();
                 byte rcb2 = r.ReadByte();
                 int mapper = (rcb1 >> 4) | (rcb2 & 0xF0);
+                MapperNumber = mapper;
                 byte ramBanks = r.ReadByte();
 
                 // Read reserved bytes
@@ -83,17 +85,13 @@ namespace Emu6502
                 Console.WriteLine("    4-Screen Mirroring: {0}", (rcb1 & 0x08) != 0 ? "Yes" : "No");
                 Console.WriteLine("8KB RAM banks: {0}", ramBanks);
 
-                PrgRomBanks = new byte[prgRomBanks==1?2:prgRomBanks][];
+                PrgRomBanks = new byte[prgRomBanks][];
                 ChrRomBanks = new byte[vromBanks][];
                 RamBanks = new byte[ramBanks][];
 
-                StreamWriter sw = new StreamWriter(File.Open("out.txt", FileMode.Create, FileAccess.Write));
 
                 for (int i = 0; i < prgRomBanks; ++i)
                     PrgRomBanks[i] = r.ReadBytes(16 * 1024);
-                if (prgRomBanks == 1)
-                    PrgRomBanks[1] = PrgRomBanks[0];
-                sw.Close();
 
                 for (int i = 0; i < vromBanks; ++i)
                     ChrRomBanks[i] = r.ReadBytes(8 * 1024);
@@ -110,22 +108,6 @@ namespace Emu6502
                 else
                     MirrorType = MirrorType.Horizontal;
 
-                // Temp patch
-                /*byte inst = 0x6a;
-                PrgRomBanks[0][0] = 0xa9;
-                PrgRomBanks[0][1] = 0xff;
-                PrgRomBanks[0][2] = inst;
-                PrgRomBanks[0][3] = inst;
-                PrgRomBanks[0][4] = inst;
-                PrgRomBanks[0][5] = inst;
-                PrgRomBanks[0][6] = inst;
-                PrgRomBanks[0][7] = inst;
-                PrgRomBanks[0][8] = inst;
-                PrgRomBanks[0][9] = inst;
-                PrgRomBanks[0][10] = inst;
-                PrgRomBanks[0][11] = inst;*/
-
-                //Console.WriteLine("Position = {0}",r.BaseStream.Position);
             }
         }
     }

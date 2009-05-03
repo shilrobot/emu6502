@@ -83,8 +83,10 @@
       <DependentUpon>Breakpoints.cs</DependentUpon>
     </Compile>
     <Compile Include="IMemory.cs" />
+    <Compile Include="Mapper.cs" />
     <Compile Include="Nes.cs" />
     <Compile Include="NesMemory.cs" />
+    <Compile Include="NROM.cs" />
     <Compile Include="Ppu.cs" />
     <Compile Include="PpuOutput.cs">
       <SubType>Form</SubType>
@@ -128,6 +130,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <Compile Include="Rom.cs" />
+    <Compile Include="UxROM.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -37,7 +37,7 @@
             this.ClientSize = new System.Drawing.Size(546, 403);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Name = "PpuOutput";
-            this.Text = "NESbert";
+            this.Text = "NES Emulator";
             this.Paint += new System.Windows.Forms.PaintEventHandler(this.PpuOutput_Paint);
             this.ResumeLayout(false);
 

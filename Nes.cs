@@ -19,6 +19,7 @@ namespace Emu6502
         public Chip6502 Cpu { get; private set; }
         public Ppu Ppu { get; private set; }
         public NesMemory Mem { get; private set; }
+        public Mapper Mapper { get; private set; }
         //private int cpuCycles;
         //private int ppuCycles;
         //public int frameDivider = 0;
@@ -38,6 +39,17 @@ namespace Emu6502
             Mem = new NesMemory(this);
             Cpu = new Chip6502(Mem);
             Ppu = new Ppu(this);
+            switch (Rom.MapperNumber)
+            {
+                case 0:
+                    Mapper = new NROM(this);
+                    break;
+                case 2:
+                    Mapper = new UxROM(this);
+                    break;
+                default:
+                    throw new Exception("Unknown mapper");
+            }
 
             Reset();
         }
@@ -52,6 +64,7 @@ namespace Emu6502
             TotalCpuCycles = 0;
             frameCount = 0;
             Mem.Reset();
+            Mapper.Reset();
             Cpu.Reset();
             Ppu.Reset();
             sw.Start();

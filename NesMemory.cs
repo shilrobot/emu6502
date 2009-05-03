@@ -8,7 +8,8 @@ namespace Emu6502
     // TODO: Separate mapper system
     public class NesMemory : IMemory
     {
-        private byte[] RAM;
+        public byte[] RAM;
+        public byte[] SaveRAM;
         private Nes nes;
         private Rom rom;
 
@@ -22,6 +23,7 @@ namespace Emu6502
         public void Reset()
         {
             RAM = new byte[2048];
+            SaveRAM = new byte[0x2000];
         }
 
         public byte Read(int addr)
@@ -89,23 +91,23 @@ namespace Emu6502
                         return b;
                     }
 
-                // Save ram (TODO) -- goes to cartridge
                 case 0x6000:
                 case 0x7000:
-                    return 0;
+                    // TODO: Mirroring? Mapper specific?
+                    return SaveRAM[addr & 0x1FFF];
 
-                // Temp. NROM emulation
                 case 0x8000:
                 case 0x9000:
                 case 0xA000:
                 case 0xB000:
-                    return rom.PrgRomBanks[0][addr & 0x3FFF];
-
                 case 0xC000:
                 case 0xD000:
                 case 0xE000:
                 case 0xF000:
-                    return rom.PrgRomBanks[1][addr & 0x3FFF];
+                    return nes.Mapper.PrgRomRead(addr & 0xFFFF);
+                    /*return rom.PrgRomBanks[0][addr & 0x3FFF];
+
+                    return rom.PrgRomBanks[1][addr & 0x3FFF];*/
 
                 // Shut up, C# compiler
                 default:
@@ -193,11 +195,13 @@ namespace Emu6502
             }
             else if (addr < 0x8000)
             {
+                SaveRAM[addr & 0x1FFF] = val;
                 //Console.WriteLine(" -> Save RAM ${0:X4} = ${0:X2}", addr, val);
                 // TODO
             }
             else
             {
+                nes.Mapper.PrgRomWrite(addr, val);
                 //Console.WriteLine(" -> PRG-ROM ${0:X4} = ${0:X2}", addr, val);
             }
         }

@@ -73,7 +73,7 @@ namespace Emu6502
             SpriteHitFlag = false;
 
             // TODO: This is mapper's job
-            PatternTables = (nes.Rom.ChrRomBanks.Length == 0) ? new byte[8*1024] : nes.Rom.ChrRomBanks[0];
+            //PatternTables = (nes.Rom.ChrRomBanks.Length == 0) ? new byte[8*1024] : nes.Rom.ChrRomBanks[0];
             //NameAttributeTables = new byte[4096];
             NameAttributeTables = new byte[4][];
             if (nes.Rom.MirrorType == MirrorType.Horizontal)
@@ -410,10 +410,47 @@ namespace Emu6502
             }
         }
 
-        private void RenderSprites(int row, bool priority)
+        private void RenderSpriteRow(int row, int spriteX, int spriteY, int patternAddr, int palette, bool flipH, bool flipV)
         {
+            int paletteAddr = 0x10 + palette * 4;
+            int palette1 = PpuOutput.Palette[Palette[paletteAddr + 1] & 0x3f] | 0xFF << 24;
+            int palette2 = PpuOutput.Palette[Palette[paletteAddr + 2] & 0x3f] | 0xFF << 24;
+            int palette3 = PpuOutput.Palette[Palette[paletteAddr + 3] & 0x3f] | 0xFF << 24;
+
             int rowStart = ScreenWidth * row;
 
+            int cx = flipH ? 0 : 7;
+            int dir = flipH ? 1 : -1;
+
+            int cy = row - spriteY;
+            if (flipV)
+                cy = 7 - cy;
+
+            byte b1 = PatternTables[patternAddr + cy];
+            byte b2 = PatternTables[patternAddr + cy + 8];
+
+            for (int n = 0; n < 8; ++n)
+            {
+                if (spriteX + cx >= 0 && spriteX + cx < ScreenWidth)
+                {
+                    byte bit1 = (byte)((b1 >> cx) & 0x1);
+                    byte bit2 = (byte)((b2 >> cx) & 0x1);
+                    byte result = (byte)(bit2 << 1 | bit1);
+
+                    if (result == 1)
+                        Framebuffer[rowStart + spriteX + n] = palette1;
+                    else if (result == 2)
+                        Framebuffer[rowStart + spriteX + n] = palette2;
+                    else if (result == 3)
+                        Framebuffer[rowStart + spriteX + n] = palette3;
+
+                    cx += dir;
+                }
+            }
+        }
+
+        private void RenderSprites8x8(int row, bool priority)
+        {
             // TODO: Sprite-BG tests...
 
             int spritePatternTableAddr = (PpuCtrl & 0x08) != 0 ? 0x1000 : 0x0000;
@@ -423,29 +460,121 @@ namespace Emu6502
             for (int i = 0; i < 64; ++i)
             {
                 int y = SpriteMem[offset++];
+                byte B1 = SpriteMem[offset++];
+                byte B2 = SpriteMem[offset++];
+                int x = SpriteMem[offset++];
+
                 if (y >= 0xEE)
-                {
-                    offset += 3;
                     continue;
-                }
+
                 y += 1;
                 int cy = row - y;
 
                 if (cy < 0 || cy >= 8)
-                {
-                    offset += 3;
                     continue;
-                }
 
-                byte B1 = SpriteMem[offset++];
-                byte B2 = SpriteMem[offset++];
                 bool spritePriority = (B2 & 0x20) != 0;
-                int x = SpriteMem[offset++];
 
                 if (spritePriority != priority)
-                {
                     continue;
+
+                int palette = (B2 & 0x3);
+                int patternAddr = spritePatternTableAddr + B1 * 16;
+                bool flipH = (B2 & 0x40) != 0;
+                bool flipV = (B2 & 0x80) != 0;
+
+                RenderSpriteRow(row, x, y, patternAddr, palette, flipH, flipV);
+            }
+        }
+
+        private void RenderSprites8x16(int row, bool priority)
+        {
+            // TODO: Sprite-BG tests...
+
+            // Render sprites
+            int offset = 0;
+            for (int i = 0; i < 64; ++i)
+            {
+                int y = SpriteMem[offset++];
+                byte B1 = SpriteMem[offset++];
+                byte B2 = SpriteMem[offset++];
+                int x = SpriteMem[offset++];
+
+                if (y >= 0xEE)
+                    continue;
+
+                y += 1;
+                int cy = row - y;
+
+                if (cy < 0 || cy >= 16)
+                    continue;
+
+                bool spritePriority = (B2 & 0x20) != 0;
+
+                if (spritePriority != priority)
+                    continue;
+
+                int pattern1 = B1 & 0xFE;
+                int bank = (B1 & 0x1) != 0 ? 0x1000 : 0x0000;
+                int palette = (B2 & 0x3);
+                int patternAddr1 = bank + pattern1 * 16;
+                int patternAddr2 = bank + (pattern1 + 1) * 16;
+                bool flipH = (B2 & 0x40) != 0;
+                bool flipV = (B2 & 0x80) != 0;
+
+                if (flipV)
+                {
+                    if (cy < 8)
+                        RenderSpriteRow(row, x, y, patternAddr2, palette, flipH, flipV);
+                    else
+                        RenderSpriteRow(row, x, y+8, patternAddr1, palette, flipH, flipV);
                 }
+                else
+                {
+                    if (cy < 8)
+                        RenderSpriteRow(row, x, y, patternAddr1, palette, flipH, flipV);
+                    else
+                        RenderSpriteRow(row, x, y + 8, patternAddr2, palette, flipH, flipV);
+                }
+            }
+        }
+
+#if false
+        private void RenderSprites(int row, bool priority)
+        {
+            int rowStart = ScreenWidth * row;
+
+            // TODO: Sprite-BG tests...
+
+            int spritePatternTableAddr = (PpuCtrl & 0x08) != 0 ? 0x1000 : 0x0000;
+
+            /*
+            bool _8x16 = (PpuCtrl & 0x20) != 0;
+            int spriteHeight = _8x16 ? 16 : 8;
+             * */
+
+            // Render sprites
+            int offset = 0;
+            for (int i = 0; i < 64; ++i)
+            {
+                int y = SpriteMem[offset++];
+                byte B1 = SpriteMem[offset++];
+                byte B2 = SpriteMem[offset++];
+                int x = SpriteMem[offset++];
+
+                if (y >= 0xEE)
+                    continue;
+
+                y += 1;
+                int cy = row - y;
+
+                if (cy < 0 || cy >= 8)
+                    continue;
+
+                bool spritePriority = (B2 & 0x20) != 0;
+
+                if (spritePriority != priority)
+                    continue;
 
                 int palette = (B2 & 0x3);
                 int paletteAddr = 0x10 + palette * 4;
@@ -485,21 +614,27 @@ namespace Emu6502
                 }
             }
         }
+#endif
 
         private void RenderRow(int row)
         {
-            /*if(row == 32)
-                SpriteHitFlag = true;*/
-
             bool enableBG = (PpuMask & 0x08) !=0;
             bool enableSprites = (PpuMask & 0x10)!=0;
 
             int baseNTX = PpuCtrl & 0x1;
             int baseNTY = (PpuCtrl >> 1) & 0x1;
+            bool _8x16 = (PpuCtrl & 0x20) != 0;
 
             FillBG(row);
-            if(enableSprites)
-                RenderSprites(row, true);
+
+            if (enableSprites)
+            {
+                if (_8x16)
+                    RenderSprites8x16(row, true);
+                else
+                    RenderSprites8x8(row, true);
+            }
+
             if (enableBG)
             {
                 if (row >= ScreenHeight - ScrollY)
@@ -516,19 +651,15 @@ namespace Emu6502
                     baseNTX ^= 1;
                     RenderBG(row + ScrollY, baseNTX, baseNTY, -ScrollX + ScreenWidth, row);                    
                 }
-
-                // TODO: Do better than this?
-                /*RenderBG(row, baseNametableOffset, -ScrollX);
-                RenderBG(row, baseNametableOffset == 0 ? 0x400 : 0, -ScrollX + 256);*/
             }
-            if (enableSprites)
-                RenderSprites(row, false);
 
-            /*unchecked
+            if (enableSprites)
             {
-                Framebuffer[row * ScreenWidth + ScrollX] = (int)0xFFFF0000;
-                Framebuffer[row * ScreenWidth + 10 + (PpuCtrl & 0x3) * 10] = (int)0xFF00FF00;
-            }*/
+                if (_8x16)
+                    RenderSprites8x16(row, false);
+                else
+                    RenderSprites8x8(row, false);
+            }
         }
 
         private void Vsync()
