@@ -267,7 +267,7 @@ namespace Emu6502
             bmp.UnlockBits(data);
             g.DrawImageUnscaledAndClipped(bmp, new Rectangle(0, 0, ClientSize.Width, ClientSize.Height));
 
-            String hud = String.Format("FPS {0:0.0}", nes.FPS);
+            String hud = String.Format("FPS {0:0.0}\n{1}", nes.FPS, ppu.Mirroring);
             g.DrawString(hud, new Font("Courier New", 8), new SolidBrush(Color.White), 0, 0);
 
 #if false

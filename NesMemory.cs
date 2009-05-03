@@ -72,7 +72,7 @@ namespace Emu6502
                         byte b = 0;
                         if (addr == 0x4016)
                         {
-                            Console.WriteLine("Controller1 = {0:X}", nes.Controller1.Captured);
+                            //Console.WriteLine("Controller1 = {0:X}", nes.Controller1.Captured);
                             b = (byte)(nes.Controller1.Captured & 0x1);
                             nes.Controller1.Captured >>= 1;
                         }

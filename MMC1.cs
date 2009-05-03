@@ -56,9 +56,9 @@ namespace Emu6502
                 // Switch 16K at address specified in prgRomLocation bit (0=$C000, 1=$8000)
                 if ((CtrlReg & 0x4) != 0)
                 {
-                    Console.WriteLine("Switching PRG-ROM banks @ PC=${0:X}", nes.Cpu.PC);
+                    /*Console.WriteLine("Switching PRG-ROM banks @ PC=${0:X}", nes.Cpu.PC);
                     Console.WriteLine("  $8000 -> Bank ${0:X2}", PrgBankReg & 0xF);
-                    Console.WriteLine("  $C000 -> Bank ${0:X2}", nes.Rom.PrgRomBanks.Length - 1);
+                    Console.WriteLine("  $C000 -> Bank ${0:X2}", nes.Rom.PrgRomBanks.Length - 1);*/
 
                     // Switch $8000
                     PrgRomBank0 = nes.Rom.PrgRomBanks[PrgBankReg & 0xF];
@@ -66,9 +66,9 @@ namespace Emu6502
                 }
                 else
                 {
-                    Console.WriteLine("Switching PRG-ROM banks @ PC=${0:X}", nes.Cpu.PC);
+                    /*Console.WriteLine("Switching PRG-ROM banks @ PC=${0:X}", nes.Cpu.PC);
                     Console.WriteLine("  $8000 -> Bank ${0:X2}", 0);
-                    Console.WriteLine("  $C000 -> Bank ${0:X2}", PrgBankReg & 0xF);
+                    Console.WriteLine("  $C000 -> Bank ${0:X2}", PrgBankReg & 0xF);*/
 
                     // Switch $C000
                     PrgRomBank0 = nes.Rom.PrgRomBanks[0];
@@ -84,7 +84,7 @@ namespace Emu6502
 
         private void SetRegister(int whichReg, int regValue)
         {
-            Console.WriteLine("Register{1} = ${0:X2}", regValue, whichReg);
+            //Console.WriteLine("Register{1} = ${0:X2}", regValue, whichReg);
             regValue &= 0x1F;
 
             // Control
@@ -104,17 +104,19 @@ namespace Emu6502
                 else if (mirrorMode == 1)
                     mirrorType = MirrorType.SingleScreenUpper;
                 else if (mirrorMode == 2)
-                    mirrorType = MirrorType.Vertical;
-                else
                     mirrorType = MirrorType.Horizontal;
+                else
+                    mirrorType = MirrorType.Vertical;
 
                 nes.Ppu.SetMirroring(mirrorType);
 
+                /*
                 Console.WriteLine("Control Reg:");
                 Console.WriteLine("  Mirror={0} ({1})", mirrorMode, mirrorType);
                 Console.WriteLine("  PRG-ROM Location={0} ({1})", prgRomLocation ? 1 : 0, prgRomLocation ? "Switch $8000" : "Switch $C000");
                 Console.WriteLine("  PRG-ROM Mode={0} ({1})", prgRomMode ? 1 : 0, prgRomMode ? "Switch 16KB at address from Location bit" : "Switch 32K at $8000, ignore low bit");
                 Console.WriteLine("  CHR-ROM Mode={0} ({1})", chrRomMode ? 1 : 0, chrRomMode ? "Separate 4K banks" : "Switch 8K at a time");
+                */
 
                 UpdatePrgBanks();
             }
@@ -139,7 +141,7 @@ namespace Emu6502
 
         public override void PrgRomWrite(int addr, byte data)
         {
-            Console.WriteLine("PRG-ROM write: ${0:X4} = ${1:X2}", addr,data);
+            //Console.WriteLine("PRG-ROM write: ${0:X4} = ${1:X2}", addr,data);
             int whichReg = (addr & 0x7fff) >> 13;
 
             if ((data & 0x80) != 0)

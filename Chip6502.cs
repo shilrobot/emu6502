@@ -59,7 +59,7 @@ namespace Emu6502
             SP = 0xFF;
             //ignoreOpcodes = 0;
             SetPC(ReadWord(ResetAddr));
-            Console.WriteLine("6502 Reset -> Jump to ${0:X4}", PC);
+            //Console.WriteLine("6502 Reset -> Jump to ${0:X4}", PC);
         }
 
         // In practice this is connected to the vertical retrace from the PPU
@@ -69,7 +69,7 @@ namespace Emu6502
             PushStatus(false);
             I = true;
             SetPC(ReadWord(NMIAddr));
-            Console.WriteLine("6502 NMI -> Jump to ${0:X4}", PC);
+            //Console.WriteLine("6502 NMI -> Jump to ${0:X4}", PC);
             WaitCycles += 7; // Interrupt latency
         }
 
@@ -81,10 +81,10 @@ namespace Emu6502
                 PushStatus(false);
                 I = true;
                 SetPC(ReadWord(IRQAddr));
-                Console.WriteLine("6502 IRQ -> Jump to ${0:X4}", PC);
+                //Console.WriteLine("6502 IRQ -> Jump to ${0:X4}", PC);
             }
             else
-                Console.WriteLine("6502 IRQ (Ignored)");
+                ;// Console.WriteLine("6502 IRQ (Ignored)");
         }
 
         private byte Read(int addr)

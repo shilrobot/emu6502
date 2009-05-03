@@ -51,6 +51,7 @@ namespace Emu6502
         private byte[] Nametable2;
         private byte[] Nametable3;
         private byte[] Nametable4;
+        public MirrorType Mirroring { get; private set; }
 
         public Ppu(Nes nes)
         {
@@ -93,6 +94,8 @@ namespace Emu6502
 
         public void SetMirroring(MirrorType type)
         {
+            Mirroring = type;
+
             if (nes.Rom.MirrorType == MirrorType.Horizontal)
             {
                 NameAttributeTables[0] = NameAttributeTables[1] = Nametable1;
@@ -153,8 +156,8 @@ namespace Emu6502
             byte status = 0;
             if (VsyncFlag)
             {
-                fs.WriteLine("{0},{1},VBL flag read", nes.TotalCpuCycles, VsyncFlag?1:0);
-                Console.WriteLine("PPUSTATUS read returned VSync flag PC=${0:X4}", nes.Cpu.PC);
+                //fs.WriteLine("{0},{1},VBL flag read", nes.TotalCpuCycles, VsyncFlag?1:0);
+                //Console.WriteLine("PPUSTATUS read returned VSync flag PC=${0:X4}", nes.Cpu.PC);
                 status |= 0x80;
             }
             /*else
@@ -181,7 +184,7 @@ namespace Emu6502
         // $2003 OAMADDR (W)
         public void WriteOAMAddr(byte val)
         {
-            Console.WriteLine("OAMADDR = ${0:X2}", val);
+            //Console.WriteLine("OAMADDR = ${0:X2}", val);
             OAMAddr = val;
         }
 
@@ -282,7 +285,7 @@ namespace Emu6502
             /*if(data != 0x00 && data != 0x24)
                 Console.WriteLine("W VRAM ${0:X4}=${1:X2}", VramAddr, data);*/
 
-            Console.WriteLine("W VRAM ${0:X4}=${1:X2}", VramAddr, data);
+            //Console.WriteLine("W VRAM ${0:X4}=${1:X2}", VramAddr, data);
 
             if ((PpuCtrl & 0x04) != 0)
                 VramAddr += 0x20;
@@ -329,7 +332,7 @@ namespace Emu6502
             {
                 // Assume this is ROM for now
                 //Console.WriteLine("Writing to ROM! O_O");
-                // Temp. -- allow writing to ROM, overtest.nes does this
+                // Temp. -- allow writing to ROM, overtest.nes does this -- should be mapper specific
                 PatternTables[addr] = val;
             }
             else if(addr >= 0x2000 && addr < 0x3F00)
@@ -337,7 +340,8 @@ namespace Emu6502
                 // TODO: Proper mirroring here
                 /*int nameAttrAddr = addr & 0xFFF;
                 NameAttributeTables[nameAttrAddr] = val;*/
-
+                if ((addr & 0xFF) == 0)
+                    Console.WriteLine("W VRAM ${0:X4} when Mirroring={1}", addr, Mirroring);
                 NameAttributeTables[MirrorHigh(addr)][MirrorLow(addr)] = val;
             }
             else// if(addr >= 0x3F00 && addr < 0x4000)
@@ -379,6 +383,9 @@ namespace Emu6502
             int bgPatternStart = (PpuCtrl & 0x10) != 0 ? 0x1000 : 0x0000;
 
             //int nametableStart = 0x2000;
+
+            Framebuffer[rowStart + ScrollX] = 0xFF << 24 | 0xFF0000;
+            Framebuffer[rowStart + ScrollY] = 0xFF << 24 | 0x00FF00;
 
             int mirrorHigh = ntY << 1 | ntX;//MirrorHigh(nameTableOffset);
 
@@ -701,11 +708,11 @@ namespace Emu6502
             VsyncSignalToMainLoop = true;
             if ((PpuCtrl & 0x80) != 0)
             {
-                fs.WriteLine("{0},1,NMI Triggered", nes.TotalCpuCycles);
+                //fs.WriteLine("{0},1,NMI Triggered", nes.TotalCpuCycles);
                 nes.Cpu.NMI();
             }
             else
-                Console.WriteLine("VSync NMI Ignored");
+                ;// Console.WriteLine("VSync NMI Ignored");
         }
 
         public void FinishScanline()
@@ -734,8 +741,8 @@ namespace Emu6502
                     ScanlineIndex = 0;
                     FrameCycle = 0;
                     Vsync();
-                    fs.WriteLine("{0},1,VBL set", nes.TotalCpuCycles);
-                    Console.WriteLine("NMI @ {0} cycles", nes.TotalCpuCycles);
+                    //fs.WriteLine("{0},1,VBL set", nes.TotalCpuCycles);
+                    //Console.WriteLine("NMI @ {0} cycles", nes.TotalCpuCycles);
                 }
             //}
 
@@ -749,8 +756,8 @@ namespace Emu6502
             // Temp. -- Figure out why this works! :( Should be 2270*3 = 6810
             if (FrameCycle == 2270*3)//6200)
             {
-                fs.WriteLine("{0},0,Clear VBL Flag", nes.TotalCpuCycles);
-                Console.WriteLine("Clear NMI Flag @ {0} cycles", nes.TotalCpuCycles);
+                //fs.WriteLine("{0},0,Clear VBL Flag", nes.TotalCpuCycles);
+                //Console.WriteLine("Clear NMI Flag @ {0} cycles", nes.TotalCpuCycles);
                 VsyncFlag = false;
             }
 
