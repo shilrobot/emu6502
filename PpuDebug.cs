@@ -33,20 +33,20 @@ namespace Emu6502
                     byte bit1 = (byte)((b1 >> (7 - x)) & 0x1);
                     byte bit2 = (byte)((b2 >> (7 - x)) & 0x1);
                     byte result = (byte)(bit2 << 1 | bit1);
-                    byte intensity;
+                    int color;
                     if (result == 3)
-                        intensity = 255;
+                        color = 0xFF << 24 | 0xFF0000;
                     else if (result == 2)
-                        intensity = 160;
+                        color = 0xFF << 24 | 0x00FF00;
                     else if (result == 1)
-                        intensity = 80;
+                        color = 0xFF << 24 | 0x0000FF;
                     else
-                        intensity = 0;
+                        color = 0;
 
                     if (result == 0)
                         bmp.SetPixel(x, y, Color.FromArgb(0,0,0,0));
                     else
-                        bmp.SetPixel(x, y, Color.FromArgb(intensity, intensity, intensity));
+                        bmp.SetPixel(x, y, Color.FromArgb(color));
                     /*if (result == 0)
                         bmp.SetPixel(x, y, Color.FromArgb(0, 0, 0, 0));
                     else
@@ -71,11 +71,11 @@ namespace Emu6502
             int x = 0, y = 0;
             for (int addr = 0x2000; addr < 0x3000; addr += 0x0400)
             {
-                g.DrawString(String.Format("${0:X4}", addr), fnt, fntBrush, 0, y * BlockSize);
+                g.DrawString(String.Format("${0:X4}", addr), fnt, fntBrush, 16*4 + 8*16, y * BlockSize);
                 y++;
                 for (int i = 0; i < 32 * 30; ++i)
                 {
-                    g.DrawString(String.Format("{0:X2}", ppu.Read(addr+i)), fnt, fntBrush, x * BlockSize*2, y * BlockSize);
+                    g.DrawString(String.Format("{0:X2}", ppu.Read(addr+i)), fnt, fntBrush, 16*4 + 8*16 + x * BlockSize*2, y * BlockSize);
                     
                     x++;
                     if (x == 32)
@@ -102,18 +102,19 @@ namespace Emu6502
                 }
             }
 
-            /*int x=0,y=0;
+            //int x=0,y=0;
+            x = 0; y = 0;
             for (int addr = 0; addr < 0x2000; addr += 16)
             {
                 Bitmap bmp = GetPattern(addr);
-                g.DrawImage(bmp, x * 8, y * 8);
+                g.DrawImage(bmp, 16*4 + x * 8, y * 8);
                 x++;
                 if (x == 16)
                 {
                     x = 0;
                     y++;
                 }
-            }*/
+            }
         }
     }
 }

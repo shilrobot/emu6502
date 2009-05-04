@@ -163,13 +163,13 @@ break;
 case 0x10:
 {
 NPC = (ushort)(PC+2);
-if(!N) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; NPC = (ushort)(PC+2+offset); };
+if(!N) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget & 0xFF00) != (NPC & 0xFF00)) WaitCycles++; NPC = takenTarget; };
 }
 break;
 case 0x11:
 {
 NPC = (ushort)(PC+2);
-addr = (ushort)(ReadWordZP(Read(PC+1))+Y);
+{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 data |= A;
 A = data;
@@ -206,7 +206,7 @@ break;
 case 0x19:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+Y);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 data |= A;
 A = data;
@@ -216,7 +216,7 @@ break;
 case 0x1D:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+X);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 data |= A;
 A = data;
@@ -226,7 +226,7 @@ break;
 case 0x1E:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+X);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 C = (data & 0x80)!=0;
 data <<= 1;
@@ -348,13 +348,13 @@ break;
 case 0x30:
 {
 NPC = (ushort)(PC+2);
-if(N) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; NPC = (ushort)(PC+2+offset); };
+if(N) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget & 0xFF00) != (NPC & 0xFF00)) WaitCycles++; NPC = takenTarget; };
 }
 break;
 case 0x31:
 {
 NPC = (ushort)(PC+2);
-addr = (ushort)(ReadWordZP(Read(PC+1))+Y);
+{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 data &= A;
 A = data;
@@ -393,7 +393,7 @@ break;
 case 0x39:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+Y);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 data &= A;
 A = data;
@@ -403,7 +403,7 @@ break;
 case 0x3D:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+X);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 data &= A;
 A = data;
@@ -413,7 +413,7 @@ break;
 case 0x3E:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+X);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 bool oldC = C;
 C = (data & 0x80)!=0;
@@ -517,13 +517,13 @@ break;
 case 0x50:
 {
 NPC = (ushort)(PC+2);
-if(!V) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; NPC = (ushort)(PC+2+offset); };
+if(!V) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget & 0xFF00) != (NPC & 0xFF00)) WaitCycles++; NPC = takenTarget; };
 }
 break;
 case 0x51:
 {
 NPC = (ushort)(PC+2);
-addr = (ushort)(ReadWordZP(Read(PC+1))+Y);
+{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 data ^= A;
 A = data;
@@ -560,7 +560,7 @@ break;
 case 0x59:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+Y);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 data ^= A;
 A = data;
@@ -570,7 +570,7 @@ break;
 case 0x5D:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+X);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 data ^= A;
 A = data;
@@ -580,7 +580,7 @@ break;
 case 0x5E:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+X);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 C = (data & 0x01)!=0;
 data >>= 1;
@@ -697,13 +697,13 @@ break;
 case 0x70:
 {
 NPC = (ushort)(PC+2);
-if(V) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; NPC = (ushort)(PC+2+offset); };
+if(V) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget & 0xFF00) != (NPC & 0xFF00)) WaitCycles++; NPC = takenTarget; };
 }
 break;
 case 0x71:
 {
 NPC = (ushort)(PC+2);
-addr = (ushort)(ReadWordZP(Read(PC+1))+Y);
+{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 int result = A + data + (C?1:0);
 C = (result & 0xFF00) != 0;
@@ -746,7 +746,7 @@ break;
 case 0x79:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+Y);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 int result = A + data + (C?1:0);
 C = (result & 0xFF00) != 0;
@@ -758,7 +758,7 @@ break;
 case 0x7D:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+X);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 int result = A + data + (C?1:0);
 C = (result & 0xFF00) != 0;
@@ -770,7 +770,7 @@ break;
 case 0x7E:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+X);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 bool oldC = C;
 C = (data & 0x01)!=0;
@@ -855,13 +855,13 @@ break;
 case 0x90:
 {
 NPC = (ushort)(PC+2);
-if(!C) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; NPC = (ushort)(PC+2+offset); };
+if(!C) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget & 0xFF00) != (NPC & 0xFF00)) WaitCycles++; NPC = takenTarget; };
 }
 break;
 case 0x91:
 {
 NPC = (ushort)(PC+2);
-addr = (ushort)(ReadWordZP(Read(PC+1))+Y);
+{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = A;
 Write(addr, data);
 }
@@ -901,7 +901,7 @@ break;
 case 0x99:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+Y);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = A;
 Write(addr, data);
 }
@@ -915,7 +915,7 @@ break;
 case 0x9D:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+X);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = A;
 Write(addr, data);
 }
@@ -1026,13 +1026,13 @@ break;
 case 0xB0:
 {
 NPC = (ushort)(PC+2);
-if(C) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; NPC = (ushort)(PC+2+offset); };
+if(C) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget & 0xFF00) != (NPC & 0xFF00)) WaitCycles++; NPC = takenTarget; };
 }
 break;
 case 0xB1:
 {
 NPC = (ushort)(PC+2);
-addr = (ushort)(ReadWordZP(Read(PC+1))+Y);
+{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 A = data;
 Z = (data == 0); N = (data > 127);
@@ -1074,7 +1074,7 @@ break;
 case 0xB9:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+Y);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 A = data;
 Z = (data == 0); N = (data > 127);
@@ -1091,7 +1091,7 @@ break;
 case 0xBC:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+X);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 Y = data;
 Z = (data == 0); N = (data > 127);
@@ -1100,7 +1100,7 @@ break;
 case 0xBD:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+X);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 A = data;
 Z = (data == 0); N = (data > 127);
@@ -1109,7 +1109,7 @@ break;
 case 0xBE:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+Y);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 X = data;
 Z = (data == 0); N = (data > 127);
@@ -1222,13 +1222,13 @@ break;
 case 0xD0:
 {
 NPC = (ushort)(PC+2);
-if(!Z) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; NPC = (ushort)(PC+2+offset); };
+if(!Z) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget & 0xFF00) != (NPC & 0xFF00)) WaitCycles++; NPC = takenTarget; };
 }
 break;
 case 0xD1:
 {
 NPC = (ushort)(PC+2);
-addr = (ushort)(ReadWordZP(Read(PC+1))+Y);
+{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 C = A >= data;
 data = (byte)(A - data);
@@ -1264,7 +1264,7 @@ break;
 case 0xD9:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+Y);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 C = A >= data;
 data = (byte)(A - data);
@@ -1274,7 +1274,7 @@ break;
 case 0xDD:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+X);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 C = A >= data;
 data = (byte)(A - data);
@@ -1284,7 +1284,7 @@ break;
 case 0xDE:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+X);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 --data;
 Write(addr, data);
@@ -1403,13 +1403,13 @@ break;
 case 0xF0:
 {
 NPC = (ushort)(PC+2);
-if(Z) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; NPC = (ushort)(PC+2+offset); };
+if(Z) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget & 0xFF00) != (NPC & 0xFF00)) WaitCycles++; NPC = takenTarget; };
 }
 break;
 case 0xF1:
 {
 NPC = (ushort)(PC+2);
-addr = (ushort)(ReadWordZP(Read(PC+1))+Y);
+{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 int result = A - data - (C?0:1);
 C = (result & 0xFF00) == 0;
@@ -1449,7 +1449,7 @@ break;
 case 0xF9:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+Y);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 int result = A - data - (C?0:1);
 C = (result & 0xFF00) == 0;
@@ -1461,7 +1461,7 @@ break;
 case 0xFD:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+X);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 int result = A - data - (C?0:1);
 C = (result & 0xFF00) == 0;
@@ -1473,7 +1473,7 @@ break;
 case 0xFE:
 {
 NPC = (ushort)(PC+3);
-addr = (ushort)(ReadWord(PC+1)+X);
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
 ++data;
 Write(addr, data);

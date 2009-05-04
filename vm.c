@@ -14,8 +14,23 @@
 #define AGEN_ZPY	addr = (ushort)((LO+Y)&0xFF);	// Zero page wraps around
 #define AGEN_A
 #define AGEN_ABS	addr = HILO;
-#define AGEN_ABSX	addr = (ushort)(HILO+X);
-#define AGEN_ABSY	addr = (ushort)(HILO+Y);
+
+// Extra cycle if we cross a page on a 4-cycle opcode
+#define AGEN_ABSX	{ \
+ushort baseAddr = HILO; \
+addr = (ushort)(baseAddr+X); \
+if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) \
+		WaitCycles++; \
+}
+
+// Extra cycle if we cross a page on a 4-cycle opcode
+#define AGEN_ABSY	{ \
+ushort baseAddr = HILO; \
+addr = (ushort)(baseAddr+Y); \
+if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) \
+		WaitCycles++; \
+}
+
 // Only used for jump indirect -- simulate JMP INDIRECT page wraparound "bug"
 #define AGEN_IND	{  \
 						ushort addr1 = HILO; \
@@ -25,7 +40,14 @@
 						addr = (ushort)(addr2_lo | (addr2_hi<<8)); \
 					}
 #define AGEN_INDX	addr = ReadWordZP((ushort)(LO+X));
-#define AGEN_INDY	addr = (ushort)(ReadWordZP(LO)+Y);
+
+// Indirect Indexed -- extra cycle if we cross a page boundary on a 5 cycle opcode
+#define AGEN_INDY	{ \
+	ushort baseAddr = ReadWordZP(LO); \
+	addr = (ushort)(baseAddr+Y); \
+	if(Cycles[opcode] == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) \
+		WaitCycles++; \
+}
 #define AGEN_IMPL
 #define AGEN_REL
 
@@ -59,6 +81,18 @@
 #define WRITE_IMPL
 #define WRITE_REL	// TODO: Hmm
 
-#define BRANCH(cond) if(cond) { WaitCycles++; byte lo = LO; int offset = (lo <= 127) ? lo : lo - 256; NPC = (ushort)(PC+2+offset); }
+// Untaken branches take 2 cycles.
+// Taken branches take 3 cycles.
+// Taken branches crossing page boundaries take 4 cycles.
+// Page boundary cross is defined as when the high byte of the next instruction != the high byte of the taken target.
+#define BRANCH(cond) if(cond) { \
+	WaitCycles++; \
+	byte lo = LO; \
+	int offset = (lo <= 127) ? lo : lo - 256; \
+	ushort takenTarget = (ushort)(PC+2+offset); \
+	if((takenTarget & 0xFF00) != (NPC & 0xFF00)) \
+		WaitCycles++; \
+	NPC = takenTarget; \
+}
 
 #include "vm_out.c"

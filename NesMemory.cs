@@ -81,6 +81,9 @@ namespace Emu6502
                             b = (byte)(nes.Controller2.Captured & 0x1);
                             nes.Controller2.Captured >>= 1;
                         }
+                        else
+                            if(addr <= 0x4020)
+                                Console.WriteLine("R IO ${0:X4}", addr);
 
                         //Console.WriteLine("R IO ${0:X4} = ${1:X2}", addr, b);
                         /*if (addr < 0x4020)
@@ -133,6 +136,8 @@ namespace Emu6502
             else if (addr < 0x4000)
             {
                 addr = 0x2000 | (addr & 0x7);
+                /*if (addr != 0x2003)
+                    Console.WriteLine("W IO ${0:X4} = ${1:X2}", addr, val);*/
 
                 //Console.WriteLine("W IO ${0:X4} = ${1:X2}", addr, val);
                 switch (addr)
@@ -170,7 +175,7 @@ namespace Emu6502
                 if (addr == 0x4014)
                 {
                     ushort srcAddr = (ushort)(val * 0x100);
-                    //Console.WriteLine("DMAing ${0:X4} to OAM memory", srcAddr);
+                    //Console.WriteLine("W IO $4014: DMAing ${0:X4} to OAM memory", srcAddr);
                     // TODO: LOL, potential explosion
                     for (int i = 0; i < 256; ++i)
                     {
@@ -186,6 +191,8 @@ namespace Emu6502
                         nes.Controller2.Capture();
                     }
                 }
+                else
+                    Console.WriteLine("W IO ${0:X4} = ${1:X2}", addr, val);
 
                 // TODO
             }

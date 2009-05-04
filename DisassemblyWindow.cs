@@ -80,7 +80,7 @@ namespace Emu6502
 
             decodedInstrs.Clear();
             decodeMap.Clear();
-            int addr = 0x0000;
+            int addr = 0x8000;
             while (addr <= 0xFFFF)
             {
                 int count = 0x10000 - addr;
