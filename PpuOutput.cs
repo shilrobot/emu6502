@@ -223,6 +223,8 @@ namespace Emu6502
         }
          * */
 
+        private bool toggle = false;
+
         private unsafe void PpuOutput_Paint(object sender, PaintEventArgs e)
         {
             // TODO: Now we have to actually make this fancy so we can see what the shit is going on.
@@ -367,6 +369,28 @@ namespace Emu6502
                     x = 0;
                 }
             }*/
+
+            for (int i = 0; i < 64; ++i)
+            {
+                byte B0 = ppu.SpriteMem[i * 4 + 0];
+                byte B1 = ppu.SpriteMem[i * 4 + 1];
+                byte B2 = ppu.SpriteMem[i * 4 + 2];
+                byte B3 = ppu.SpriteMem[i * 4 + 3];
+
+               // int x = B3;
+                //int y = B0;
+                //Bitmap chunk = GetPattern((HighBank8x8 ? 0x1000 : 0x0000) + (B1 * 16));
+                //g.DrawImage(chunk, x, y);
+                //hud += String.Format("Spr{0:00} ${1:X2} ${2:X2} ({3},{4})\n", i, B1, B2, B3, B0);
+                int x = B3;
+                int y = B0 + 1;
+                Color color = Color.FromArgb(0,255,0);
+                if(i == 0 && toggle)
+                    color = Color.Black;
+                g.DrawRectangle(new Pen(color, 1), new Rectangle(x, y, 8, (ppu.PpuCtrl & 0x20) != 0 ? 16 : 8));
+            }
+
+            toggle = !toggle;
 
             //g.DrawString(hud, new Font("Courier New", 8), new SolidBrush(Color.White), 0, 0);
 //#endif

@@ -59,6 +59,11 @@ namespace Emu6502
         private int loopyV;
         private int fineX;
         private bool cycleSkipToggle;
+        private bool justReadVBL;
+
+        private bool[] SpritePriorityBuffer = new bool[ScreenWidth];
+        private int[] SpriteBuffer = new int[ScreenWidth];
+        private int[] BGBuffer = new int[ScreenWidth];
 
         public Ppu(Nes nes)
         {
@@ -89,6 +94,7 @@ namespace Emu6502
             latch = false;
             loopyT = loopyV = 0;
             fineX = 0;
+            justReadVBL = false;
 
             // TODO: This is mapper's job
             //PatternTables = (nes.Rom.ChrRomBanks.Length == 0) ? new byte[8*1024] : nes.Rom.ChrRomBanks[0];
@@ -558,22 +564,21 @@ namespace Emu6502
 
                     for (int subtileX = 0; subtileX < 8; ++subtileX)
                     {
+
                         byte bit1 = (byte)((b1 >> (7 - subtileX)) & 0x1);
                         byte bit2 = (byte)((b2 >> (7 - subtileX)) & 0x1);
                         byte result = (byte)(bit2 << 1 | bit1);
 
                         if (screenX >= 0 && screenX < ScreenWidth)
                         {
-                            int fbPos = rowStart + screenX;
-
                             if (result == 3)
-                                Framebuffer[fbPos] = palette3;
+                                BGBuffer[screenX] = palette3;
                             else if (result == 2)
-                                Framebuffer[fbPos] = palette2;
+                                BGBuffer[screenX] = palette2;
                             else if (result == 1)
-                                Framebuffer[fbPos] = palette1;
+                                BGBuffer[screenX] = palette1;
                             /*else
-                                Framebuffer[fbPos] = palette0;*/
+                                BGBuffer[screenX] = 0;*/
                         }
 
                         ++screenX;
@@ -583,7 +588,7 @@ namespace Emu6502
             }
         }
 
-        private void RenderSpriteRow(int row, int spriteX, int spriteY, int patternAddr, int palette, bool flipH, bool flipV)
+        private void RenderSpriteRow(int row, int spriteX, int spriteY, int patternAddr, int palette, bool flipH, bool flipV, bool priority, bool spriteZero)
         {
             int paletteAddr = 0x10 + palette * 4;
             int palette1 = PpuOutput.Palette[Palette[paletteAddr + 1] & 0x3f] | 0xFF << 24;
@@ -604,21 +609,43 @@ namespace Emu6502
 
             for (int n = 0; n < 8; ++n)
             {
-                if (spriteX + cx >= 0 && spriteX + cx < ScreenWidth)
+                // TODO: What do do if sprite 0 is already blocked by something?
+                if (spriteX + n >= 0 && spriteX + n < ScreenWidth && SpriteBuffer[spriteX+n] == 0)
                 {
                     byte bit1 = (byte)((b1 >> cx) & 0x1);
                     byte bit2 = (byte)((b2 >> cx) & 0x1);
                     byte result = (byte)(bit2 << 1 | bit1);
 
-                    if (result == 1)
+                    if (result != 0)
+                    {
+                        int color;
+                        if (result == 1)
+                            color = palette1;
+                        else if (result == 2)
+                            color = palette2;
+                        else// if (result == 3)
+                            color = palette3;
+
+                        if (spriteZero && BGBuffer[spriteX + n] != 0)
+                            SpriteHitFlag = true; // TODO: Store which cycle it happened on
+
+                        SpriteBuffer[spriteX + n] = color;
+                        SpritePriorityBuffer[spriteX + n] = priority;
+                        /*OpaqueBuffer[spriteX + n] = true;
+                        SpritePriorityBuffer[spriteX + n] = priority;
+                        ColorBuffer[spriteX + n] = color;*/
+                    }
+
+                    /*if (result == 1)
                         Framebuffer[rowStart + spriteX + n] = palette1;
                     else if (result == 2)
                         Framebuffer[rowStart + spriteX + n] = palette2;
                     else if (result == 3)
-                        Framebuffer[rowStart + spriteX + n] = palette3;
+                        Framebuffer[rowStart + spriteX + n] = palette3;*/
 
-                    cx += dir;
                 }
+
+                cx += dir;
             }
         }
 
@@ -648,15 +675,15 @@ namespace Emu6502
 
                 bool spritePriority = (B2 & 0x20) != 0;
 
-                if (spritePriority != priority)
-                    continue;
+                /*if (spritePriority != priority)
+                    continue;*/
 
                 int palette = (B2 & 0x3);
                 int patternAddr = spritePatternTableAddr + B1 * 16;
                 bool flipH = (B2 & 0x40) != 0;
                 bool flipV = (B2 & 0x80) != 0;
 
-                RenderSpriteRow(row, x, y, patternAddr, palette, flipH, flipV);
+                RenderSpriteRow(row, x, y, patternAddr, palette, flipH, flipV, spritePriority, i == 0);
             }
         }
 
@@ -684,8 +711,8 @@ namespace Emu6502
 
                 bool spritePriority = (B2 & 0x20) != 0;
 
-                if (spritePriority != priority)
-                    continue;
+                /*if (spritePriority != priority)
+                    continue;*/
 
                 int pattern1 = B1 & 0xFE;
                 int bank = (B1 & 0x1) != 0 ? 0x1000 : 0x0000;
@@ -698,16 +725,16 @@ namespace Emu6502
                 if (flipV)
                 {
                     if (cy < 8)
-                        RenderSpriteRow(row, x, y, patternAddr2, palette, flipH, flipV);
+                        RenderSpriteRow(row, x, y, patternAddr2, palette, flipH, flipV, spritePriority, i == 0);
                     else
-                        RenderSpriteRow(row, x, y+8, patternAddr1, palette, flipH, flipV);
+                        RenderSpriteRow(row, x, y + 8, patternAddr1, palette, flipH, flipV, spritePriority, i == 0);
                 }
                 else
                 {
                     if (cy < 8)
-                        RenderSpriteRow(row, x, y, patternAddr1, palette, flipH, flipV);
+                        RenderSpriteRow(row, x, y, patternAddr1, palette, flipH, flipV, spritePriority, i == 0);
                     else
-                        RenderSpriteRow(row, x, y + 8, patternAddr2, palette, flipH, flipV);
+                        RenderSpriteRow(row, x, y + 8, patternAddr2, palette, flipH, flipV, spritePriority, i == 0);
                 }
             }
         }
@@ -797,6 +824,14 @@ namespace Emu6502
                 loopyV |= (loopyT & 0x41F);
             }
 
+            for (int x = 0; x < ScreenWidth; ++x)
+            {
+                SpriteBuffer[x] = 0;
+                BGBuffer[x] = 0;
+                //PriorityBuffer[x] = false;
+                //ColorBuffer[x] = 0;
+            }
+
             bool enableBG = (PpuMask & 0x08) !=0;
             bool enableSprites = (PpuMask & 0x10)!=0;
 
@@ -808,17 +843,10 @@ namespace Emu6502
 
             /*baseNTX = 0; baseNTY = 0; ScrollX = 0; ScrollY = 0;*/
 
-            FillBG(row);
-
-            if (enableSprites)
-            {
-                if (_8x16)
-                    RenderSprites8x16(row, true);
-                else
-                    RenderSprites8x8(row, true);
-            }
+            //FillBG(row);
 
             int scrollY = ScrollY;// % 100; ;// % (30 * 8);
+
 
             if (enableBG)
             {
@@ -838,13 +866,52 @@ namespace Emu6502
                 }
             }
 
+            bool spriteFlagBefore = SpriteHitFlag;
+
             if (enableSprites)
+            {
+                if (_8x16)
+                    RenderSprites8x16(row, true);
+                else
+                    RenderSprites8x8(row, true);
+            }
+
+            int defaultBgColor = PpuOutput.Palette[Palette[0] & 0x3f] | 0xFF << 24;
+
+
+            int fbPos = row*ScreenWidth;
+            for (int x = 0; x < ScreenWidth; ++x)
+            {
+                int color;// = PpuOutput.Palette[Palette[0] & 0x3f] | 0xFF << 24;
+                int spriteColor = SpriteBuffer[x];
+                int bgColor = BGBuffer[x];
+
+                if(bgColor == 0 && spriteColor == 0)
+                    color = defaultBgColor;
+                else if (bgColor != 0 && spriteColor == 0)
+                    color = bgColor;
+                else if (bgColor == 0 && spriteColor != 0)
+                    color = spriteColor;
+                else // both BG & sprite set
+                    color = SpritePriorityBuffer[x] ? bgColor : spriteColor;
+
+                Framebuffer[fbPos++] = color;
+            }
+
+            if (spriteFlagBefore != SpriteHitFlag)
+            {
+                fbPos = row * ScreenWidth;
+                for (int x = 0; x < ScreenWidth; ++x)
+                    Framebuffer[fbPos++] = 0xFF << 24 | 0xFF0000;
+            }
+
+            /*if (enableSprites)
             {
                 if (_8x16)
                     RenderSprites8x16(row, false);
                 else
                     RenderSprites8x8(row, false);
-            }
+            }*/
 
             //Framebuffer[ScreenWidth*row + ScrollX] = 0xFF << 24 | 0xFF0000;
             //Framebuffer[ScreenWidth * row + ScrollY] = 0xFF << 24 | 0x00FF00;
@@ -864,60 +931,56 @@ namespace Emu6502
                 ;// Console.WriteLine("VSync NMI Ignored");
         }
 
-        public void FinishScanline()
+        private void BeginScanline()
         {
-            /*if (ScanlineIndex == 20)
+            int row = ScanlineIndex - VsyncScanlines;
+
+            // If BG & sprites are enabled, V = T @ scanline 0
+
+            if ((PpuMask & 0x18) != 0 && row == 0)
+                loopyV = loopyT;
+
+            int coarseX = loopyV & 0x1F;
+            int coarseY = (loopyV >> 5) & 0x1f;
+            int fineY = (loopyV >> 12) & 0x7;
+            ScrollX = (byte)((coarseX) << 3 | fineX);
+            ScrollY = (byte)((coarseY) << 3 | fineY);
+
+            if (row >= 0 && row < ScreenHeight)
+                RenderRow(row);
+            // hack hack
+            /*if (row == 31)
+                SpriteHitFlag = true;*/
+        }
+
+        private void FinishScanline()
+        {
+
+            ++ScanlineIndex;
+            //ScanlineCycle = 0;
+
+            if (ScanlineIndex >= Scanlines)
             {
-                Console.WriteLine("Clear NMI Flag @ {0} cycles", nes.TotalCpuCycles);
-                VsyncFlag = false;
-            }*/
-
-
-            /*ScanlineCycle++;
-            if (ScanlineCycle >= ClocksPerScanline)
-            {*/
-                int row = ScanlineIndex - VsyncScanlines;
-
-                // If BG & sprites are enabled, V = T @ scanline 0
-                
-                if ((PpuMask & 0x18) != 0 && row == 0)
-                    loopyV = loopyT;
-
-                int coarseX = loopyV & 0x1F;
-                int coarseY = (loopyV >> 5) & 0x1f;
-                int fineY = (loopyV >> 12) & 0x7;
-                ScrollX = (byte)((coarseX) << 3 | fineX);
-                ScrollY = (byte)((coarseY) << 3 | fineY);
-
-                if (row >= 0 && row < ScreenHeight)
-                    RenderRow(row);
-                // hack hack
-                if (row == 31)
-                    SpriteHitFlag = true;
-                ++ScanlineIndex;
-                //ScanlineCycle = 0;
-
-                if (ScanlineIndex >= Scanlines)
-                {
-                    fs.WriteLine("{0},{1}", nes.TotalCpuCycles, VsyncFlag ? 1 : 0);
-                    ScanlineCycle = 0;
-                    ScanlineIndex = 0;
-                    FrameCycle = 0;
-                    Vsync();
-                    //fs.WriteLine("{0},1,VBL set", nes.TotalCpuCycles);
-                    fs.WriteLine("{0},{1}", nes.TotalCpuCycles, VsyncFlag ? 1 : 0);
-
-
-                    //Console.WriteLine("NMI @ {0} cycles", nes.TotalCpuCycles);
-                }
-            //}
-
+                fs.WriteLine("{0},{1}", nes.TotalCpuCycles, VsyncFlag ? 1 : 0);
+                ScanlineCycle = 0;
+                ScanlineIndex = 0;
+                FrameCycle = 0;
+                Vsync();
+                //fs.WriteLine("{0},1,VBL set", nes.TotalCpuCycles);
+                fs.WriteLine("{0},{1}", nes.TotalCpuCycles, VsyncFlag ? 1 : 0);
+                //Console.WriteLine("NMI @ {0} cycles", nes.TotalCpuCycles);
+            }
         }
 
         private string shiftString = "";
 
         public void Tick()
         {
+            if (ScanlineCycle == 0)
+            {
+                BeginScanline();
+            }
+
             FrameCycle++;
             ScanlineCycle++;
 
