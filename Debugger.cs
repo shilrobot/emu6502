@@ -136,7 +136,7 @@ namespace Emu6502
 
         public void UpdateScreen()
         {
-            pcLabel.Text = String.Format("PC ${0:X4}", nes.Cpu.PC);
+            pcLabel.Text = String.Format("PC ${0:X4} Cy={1}", nes.Cpu.PC, nes.TotalCpuCycles);
             spLabel.Text = String.Format("SP ${0:X2}", nes.Cpu.SP);
             aLabel.Text = DecodeReg("A", nes.Cpu.A);
             xLabel.Text = DecodeReg("X", nes.Cpu.X);

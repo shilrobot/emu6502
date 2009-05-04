@@ -191,8 +191,8 @@ namespace Emu6502
                         nes.Controller2.Capture();
                     }
                 }
-                else
-                    Console.WriteLine("W IO ${0:X4} = ${1:X2}", addr, val);
+                /*else
+                    Console.WriteLine("W IO ${0:X4} = ${1:X2}", addr, val);*/
 
                 // TODO
             }

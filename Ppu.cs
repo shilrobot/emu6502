@@ -58,6 +58,7 @@ namespace Emu6502
         private int loopyT;
         private int loopyV;
         private int fineX;
+        private bool cycleSkipToggle;
 
         public Ppu(Nes nes)
         {
@@ -83,6 +84,7 @@ namespace Emu6502
             ScanlineIndex = 0;
             ScanlineCycle = 0;
             SpriteHitFlag = false;
+            cycleSkipToggle = false;
 
             latch = false;
             loopyT = loopyV = 0;
@@ -98,7 +100,11 @@ namespace Emu6502
             NameAttributeTables = new byte[4][];
             SetMirroring(MirrorType.Vertical);//nes.Rom.MirrorType);
 
-            Palette = new byte[32];
+            // Matches blargg's startup palette
+            Palette = new byte[32] {
+                0x09, 0x01, 0x00, 0x01, 0x00, 0x02, 0x02, 0x0d, 0x08, 0x10, 0x08, 0x24, 0x00, 0x00, 0x04, 0x2c,
+                0x09, 0x01, 0x34, 0x03, 0x00, 0x04, 0x00, 0x14, 0x08, 0x3a, 0x00, 0x02, 0x00, 0x20, 0x2c, 0x08,
+            };
             SpriteMem = new byte[256];
         }
 
@@ -175,6 +181,11 @@ namespace Emu6502
                 //fs.WriteLine("{0},{1},VBL flag read", nes.TotalCpuCycles, VsyncFlag?1:0);
                 //Console.WriteLine("PPUSTATUS read returned VSync flag PC=${0:X4}", nes.Cpu.PC);
                 status |= 0x80;
+
+
+                fs.WriteLine("{0},{1}", nes.TotalCpuCycles, VsyncFlag ? 1 : 0);
+                VsyncFlag = false;
+                fs.WriteLine("{0},{1}", nes.TotalCpuCycles, VsyncFlag ? 1 : 0);
             }
             /*else
                 fs.WriteLine("{0},{1},VBL flag read", nes.TotalCpuCycles, VsyncFlag ? 1 : 0);*/
@@ -182,7 +193,6 @@ namespace Emu6502
             if (SpriteHitFlag)
                 status |= 0x40;
 
-            VsyncFlag = false;
 
             /*if (ScrollLatch != 0)
                 ;// Console.WriteLine("Resetting SCROLL latch");
@@ -889,28 +899,53 @@ namespace Emu6502
 
                 if (ScanlineIndex >= Scanlines)
                 {
+                    fs.WriteLine("{0},{1}", nes.TotalCpuCycles, VsyncFlag ? 1 : 0);
                     ScanlineCycle = 0;
                     ScanlineIndex = 0;
                     FrameCycle = 0;
                     Vsync();
                     //fs.WriteLine("{0},1,VBL set", nes.TotalCpuCycles);
+                    fs.WriteLine("{0},{1}", nes.TotalCpuCycles, VsyncFlag ? 1 : 0);
+
+
                     //Console.WriteLine("NMI @ {0} cycles", nes.TotalCpuCycles);
                 }
             //}
 
         }
 
+        private string shiftString = "";
+
         public void Tick()
         {
             FrameCycle++;
             ScanlineCycle++;
 
-            // Temp. -- Figure out why this works! :( Should be 2270*3 = 6810
-            if (FrameCycle == 2270*3)//6200)
+            // To pass vbl_clear_timing.nes from blargg's ppu tests, this has to be -7 to -1
+            // To pass vbl_clear_timing.nes from his vbl_nmi_timing tests, this has to be exactly 10
+            // Weird huh? :/
+            if (FrameCycle == 2270*3+10)//6200)
             {
                 //fs.WriteLine("{0},0,Clear VBL Flag", nes.TotalCpuCycles);
                 //Console.WriteLine("Clear NMI Flag @ {0} cycles", nes.TotalCpuCycles);
+                fs.WriteLine("{0},{1}", nes.TotalCpuCycles, VsyncFlag ? 1 : 0);
                 VsyncFlag = false;
+                fs.WriteLine("{0},{1}", nes.TotalCpuCycles, VsyncFlag ? 1 : 0);
+            }
+
+            if (FrameCycle == (20 * 341) + 328)
+            {
+                //Console.WriteLine("{0}", (PpuMask & 0x08) != 0 ? "B" : "-");
+                /*shiftString += (PpuMask & 0x08) != 0 ? (cycleSkipToggle?"B":"b") : "-";
+                if(shiftString.Length > 10)
+                    shiftString = shiftString.Substring(1);
+                Console.WriteLine(shiftString);*/
+                cycleSkipToggle = !cycleSkipToggle;
+                // Skip one cycle per frame if BG is enabled
+                if ((PpuMask & 0x08) != 0 && cycleSkipToggle)
+                {
+                    ++ScanlineCycle;
+                }
             }
 
             if (ScanlineCycle == ClocksPerScanline)
