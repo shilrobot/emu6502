@@ -80,12 +80,10 @@ case 0x00:
 {
 NPC = (ushort)(PC+1);
 NPC++;
-if(!I) {
- PushWord(NPC);
- PushStatus(true);
- I = true;
- NPC = ReadWord(IRQAddr);
-}
+PushWord(NPC);
+PushStatus(true);
+I = true;
+NPC = ReadWord(IRQAddr);
 }
 break;
 case 0x01:

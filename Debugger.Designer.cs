@@ -58,6 +58,7 @@
             this.showPCBtn = new System.Windows.Forms.Button();
             this.disassembly2 = new Emu6502.DisassemblyWindow();
             this.ppuDebug = new System.Windows.Forms.Button();
+            this.findBtn = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -322,9 +323,9 @@
             this.gotoBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.gotoBtn.Location = new System.Drawing.Point(256, 488);
             this.gotoBtn.Name = "gotoBtn";
-            this.gotoBtn.Size = new System.Drawing.Size(146, 29);
+            this.gotoBtn.Size = new System.Drawing.Size(67, 29);
             this.gotoBtn.TabIndex = 4;
-            this.gotoBtn.Text = "Go to address...";
+            this.gotoBtn.Text = "Go to";
             this.gotoBtn.UseVisualStyleBackColor = true;
             this.gotoBtn.Click += new System.EventHandler(this.gotoBtn_Click);
             // 
@@ -356,7 +357,7 @@
             // ppuDebug
             // 
             this.ppuDebug.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.ppuDebug.Location = new System.Drawing.Point(408, 488);
+            this.ppuDebug.Location = new System.Drawing.Point(329, 488);
             this.ppuDebug.Name = "ppuDebug";
             this.ppuDebug.Size = new System.Drawing.Size(146, 29);
             this.ppuDebug.TabIndex = 6;
@@ -364,11 +365,23 @@
             this.ppuDebug.UseVisualStyleBackColor = true;
             this.ppuDebug.Click += new System.EventHandler(this.ppuDebug_Click);
             // 
+            // findBtn
+            // 
+            this.findBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.findBtn.Location = new System.Drawing.Point(481, 487);
+            this.findBtn.Name = "findBtn";
+            this.findBtn.Size = new System.Drawing.Size(88, 29);
+            this.findBtn.TabIndex = 7;
+            this.findBtn.Text = "Find";
+            this.findBtn.UseVisualStyleBackColor = true;
+            this.findBtn.Click += new System.EventHandler(this.findBtn_Click);
+            // 
             // Debugger
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(865, 529);
+            this.Controls.Add(this.findBtn);
             this.Controls.Add(this.ppuDebug);
             this.Controls.Add(this.showPCBtn);
             this.Controls.Add(this.gotoBtn);
@@ -423,5 +436,6 @@
         private System.Windows.Forms.Button gotoBtn;
         private System.Windows.Forms.Button showPCBtn;
         private System.Windows.Forms.Button ppuDebug;
+        private System.Windows.Forms.Button findBtn;
     }
 }

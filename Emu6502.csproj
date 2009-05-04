@@ -76,6 +76,12 @@
     <Compile Include="DisassemblyWindow.Designer.cs">
       <DependentUpon>DisassemblyWindow.cs</DependentUpon>
     </Compile>
+    <Compile Include="FindDlg.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FindDlg.Designer.cs">
+      <DependentUpon>FindDlg.cs</DependentUpon>
+    </Compile>
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -117,6 +123,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="DisassemblyWindow.resx">
       <DependentUpon>DisassemblyWindow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FindDlg.resx">
+      <DependentUpon>FindDlg.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>

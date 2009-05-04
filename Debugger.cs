@@ -270,5 +270,14 @@ namespace Emu6502
             PpuDebug dbg = new PpuDebug(this.nes.Ppu);
             dbg.Show();
         }
+
+        private void findBtn_Click(object sender, EventArgs e)
+        {
+            FindDlg dlg = new FindDlg();
+            if (dlg.ShowDialog() == DialogResult.OK)
+            {
+                disassembly2.Find(dlg.Result);
+            }
+        }
     }
 }

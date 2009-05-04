@@ -167,12 +167,10 @@ BRK {{
 NPC++;
 // This is essentially the same as IRQ, except we set the B flag in
 // the saved status register copy on-stack.
-if(!I) {
-	PushWord(NPC);
-	PushStatus(true);
-	I = true;
-	NPC = ReadWord(IRQAddr);
-}
+PushWord(NPC);
+PushStatus(true);
+I = true;
+NPC = ReadWord(IRQAddr);
 }}
 
 RTS {{

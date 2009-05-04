@@ -267,6 +267,53 @@ namespace Emu6502
             return base.IsInputKey(keyData);
         }
 
+        public void Find(string text)
+        {
+            char[] splitChars = new char[] { '\n', '\r' };
+            string[] lines = text.Split(splitChars);
+            List<string> cleaned = new List<string>();
+            foreach (string line in lines)
+            {
+                string line2 = line.Trim();
+                if (line2 != "")
+                    cleaned.Add(line2.ToUpper());
+            }
+            
+            //MessageBox.Show(String.Join("\r\n", cleaned.ToArray()));
+            if (cleaned.Count == 0)
+                return;
+
+            int i = this.SelectedIndex;
+            i++;
+            while ((decodedInstrs.Count - i) >= cleaned.Count)
+            {
+                bool success = true;
+
+                for (int j = 0; j < cleaned.Count; j++)
+                {
+                    DecodedInstr instr = decodedInstrs[i+j];
+                    string targetStr = instr.String.ToUpper();
+
+                    if (targetStr.IndexOf(cleaned[j]) < 0)
+                    {
+                        success = false;
+                        break;
+                    }
+                }
+
+                if (success)
+                {
+                    this.SelectedIndex = i;
+                    Invalidate();
+                    MakeSelectionVisible();
+                    break;
+                }
+                else
+                    ++i;
+            }
+
+        }
+
         protected override void OnKeyDown(KeyEventArgs e)
         {
             switch(e.KeyCode & Keys.KeyCode)
