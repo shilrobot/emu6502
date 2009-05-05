@@ -8,6 +8,8 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace Emu6502
 {
@@ -92,13 +94,40 @@ namespace Emu6502
         private Ppu ppu;
         private Bitmap bmp = new Bitmap(Ppu.ScreenWidth, Ppu.ScreenHeight);
 
+        private GraphicsDevice device;
+        private Texture2D tex;
+        private SpriteBatch sb;
+
         public PpuOutput(Nes nes)
         {
             InitializeComponent();
-            this.DoubleBuffered = true;
-            this.ClientSize = new Size(Ppu.ScreenWidth, Ppu.ScreenHeight);
+            //this.DoubleBuffered = true;
+            this.ClientSize = new Size(Ppu.ScreenWidth*3, Ppu.ScreenHeight*3);
             this.ppu = nes.Ppu;
             this.nes = nes;
+
+            PresentationParameters pp = new PresentationParameters();
+            pp.AutoDepthStencilFormat = DepthFormat.Depth16;
+            pp.BackBufferCount = 1;
+            pp.BackBufferFormat = SurfaceFormat.Bgr32;
+            pp.BackBufferWidth = Ppu.ScreenWidth;
+            pp.BackBufferHeight = Ppu.ScreenHeight;
+            pp.DeviceWindowHandle = this.Handle;
+            pp.EnableAutoDepthStencil = true;
+            pp.IsFullScreen = false;
+            pp.MultiSampleType = MultiSampleType.None;
+            pp.PresentationInterval = PresentInterval.Default; // TODO
+            pp.RenderTargetUsage = RenderTargetUsage.PreserveContents;
+            pp.SwapEffect = SwapEffect.Discard;
+
+            device = new GraphicsDevice(GraphicsAdapter.DefaultAdapter,
+                                           DeviceType.Hardware,
+                                           this.Handle,
+                                           pp);
+
+            tex = new Texture2D(device, Ppu.ScreenWidth, Ppu.ScreenHeight,
+                1, TextureUsage.None, SurfaceFormat.Bgr32);
+            sb = new SpriteBatch(device);
         }
 
         private Bitmap GetPattern(int addr, int paletteAddr)
@@ -130,11 +159,11 @@ namespace Emu6502
                     else
                         bmp.SetPixel(x, y, Color.FromArgb(intensity, intensity, intensity));*/
                     if (result == 0)
-                        bmp.SetPixel(x, y, Color.FromArgb(0, 0, 0, 0));
+                        bmp.SetPixel(x, y, System.Drawing.Color.FromArgb(0, 0, 0, 0));
                     else
                     {
                         int paletteEntry = ppu.Read(paletteAddr + result)%64; // todo: bits
-                        bmp.SetPixel(x, y, Color.FromArgb(0xFF << 24 | Palette[paletteEntry]));
+                        bmp.SetPixel(x, y, System.Drawing.Color.FromArgb(0xFF << 24 | Palette[paletteEntry]));
                     }
                 }
 
@@ -229,6 +258,45 @@ namespace Emu6502
 
         private unsafe void PpuOutput_Paint(object sender, PaintEventArgs e)
         {
+            //device.Clear(Microsoft.Xna.Framework.Graphics.Color.Blue);
+
+            /*int numPixels = Ppu.ScreenWidth * Ppu.ScreenHeight; 
+            byte[] buf = new byte[numPixels * 4];
+            int j = 0;
+            for (int i = 0; i < numPixels; ++i)
+            {
+                buf[j++] = (byte)(ppu.Framebuffer[i] & 0xFF);
+                buf[j++] = (byte)((ppu.Framebuffer[i] >> 8) & 0xFF);
+                buf[j++] = (byte)((ppu.Framebuffer[i] >> 16) & 0xFF);
+                buf[j++] = 0;
+            }*/
+
+            device.SamplerStates[0].MagFilter = TextureFilter.Linear;
+            device.SamplerStates[0].MinFilter = TextureFilter.Linear;
+            device.Textures[0] = null;
+            tex.SetData(ppu.Framebuffer);
+
+            /*toggle = !toggle;
+            if (toggle)
+            {*/
+                sb.Begin();
+                sb.Draw(tex, new Microsoft.Xna.Framework.Rectangle(0, 0, 256, 240),
+                        Microsoft.Xna.Framework.Graphics.Color.White);
+                sb.End();
+            /*}
+            else
+                device.Clear(Microsoft.Xna.Framework.Graphics.Color.Blue);*/
+
+            device.Present();
+
+            //String hud = String.Format("FPS {0:0.0}", nes.FPS);//\n{1}", nes.FPS, ppu.Mirroring);
+            //e.Graphics.DrawString(hud, new Font("Courier New", 8), new SolidBrush(System.Drawing.Color.White), 0, 0);
+
+        }
+
+
+        private unsafe void PpuOutput_Paint_Old(object sender, PaintEventArgs e)
+        {
             // TODO: Now we have to actually make this fancy so we can see what the shit is going on.
 
             /*int baseNametableAddr = 0;
@@ -263,16 +331,16 @@ namespace Emu6502
             g.DrawImage(bmp, 0, 0);*/
 
             BitmapData data = 
-                bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height),
+                bmp.LockBits(new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height),
                                 System.Drawing.Imaging.ImageLockMode.WriteOnly,
                                  System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             // Assume we have zero stride (not exactly safe?)
             Marshal.Copy(ppu.Framebuffer, 0, data.Scan0, bmp.Width * bmp.Height);
             bmp.UnlockBits(data);
-            g.DrawImageUnscaledAndClipped(bmp, new Rectangle(0, 0, ClientSize.Width, ClientSize.Height));
+            g.DrawImageUnscaledAndClipped(bmp, new System.Drawing.Rectangle(0, 0, ClientSize.Width, ClientSize.Height));
 
             String hud = String.Format("FPS {0:0.0}", nes.FPS);//\n{1}", nes.FPS, ppu.Mirroring);
-            g.DrawString(hud, new Font("Courier New", 8), new SolidBrush(Color.White), 0, 0);
+            g.DrawString(hud, new Font("Courier New", 8), new SolidBrush(System.Drawing.Color.White), 0, 0);
 
 #if false
 

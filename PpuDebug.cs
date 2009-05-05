@@ -67,11 +67,12 @@ namespace Emu6502
             Graphics g = e.Graphics;
             g.Clear(Color.Black);
 
+            int x = 0, y = 0;
+
             const int BlockSize = 13;
             SolidBrush fntBrush = new SolidBrush(Color.White);
 
-            Font fnt = new Font("Courier New", 10);
-            int x = 0, y = 0;
+            /*Font fnt = new Font("Courier New", 10);
             for (int addr = 0x2000; addr < 0x3000; addr += 0x0400)
             {
                 g.DrawString(String.Format("${0:X4}", addr), fnt, fntBrush, 16*4 + 8*16, y * BlockSize);
@@ -80,6 +81,24 @@ namespace Emu6502
                 {
                     g.DrawString(String.Format("{0:X2}", ppu.Read(addr+i)), fnt, fntBrush, 16*4 + 8*16 + x * BlockSize*2, y * BlockSize);
                     
+                    x++;
+                    if (x == 32)
+                    {
+                        x = 0;
+                        y++;
+                    }
+                }
+            }*/
+
+            for (int addr = 0x2000; addr < 0x3000; addr += 0x0400)
+            {
+                for (int i = 0; i < 32 * 30; ++i)
+                {
+                    //g.DrawString(String.Format("{0:X2}", ppu.Read(addr + i)), fnt, fntBrush, 16 * 4 + 8 * 16 + x * BlockSize * 2, y * BlockSize);
+
+                    Bitmap bmp = GetPattern(0x1000+ppu.Read(addr+i)*16);
+                    g.DrawImage(bmp, 16*4 + 8*16 + x * 8, y * 8);
+
                     x++;
                     if (x == 32)
                     {

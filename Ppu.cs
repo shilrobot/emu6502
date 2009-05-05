@@ -868,19 +868,53 @@ namespace Emu6502
 
             int baseNTX = (loopyV & (1 << 10)) != 0 ? 1 : 0;
             int baseNTY = (loopyV & (1 << 11)) != 0 ? 1 : 0;
+
+            int uberScrollY = baseNTY << 8 | ScrollY;
+
             //int baseNTX = PpuCtrl & 0x1;
             //int baseNTY = (PpuCtrl >> 1) & 0x1;
             bool _8x16 = (PpuCtrl & 0x20) != 0;
+
+            //baseNTY = uberScrollY >= 30 * 8 ? 1 : 0;
+            //int scrollY = uberScrollY % (30 * 8);
 
             /*baseNTX = 0; baseNTY = 0; ScrollX = 0; ScrollY = 0;*/
 
             //FillBG(row);
 
+            // Hrm, not exactly, but getting there.
+            // It looks like stuff should be a bit further down... (by 16px)
             int scrollY = ScrollY;// % 100; ;// % (30 * 8);
 
+            int virtualRow = row + ScrollY + baseNTY*(30*8);
+            int rowModulo = virtualRow % (30 * 8);
 
             if (enableBG)
             {
+                /*if (virtualRow >= 0 && virtualRow < ScreenHeight)
+                {
+                    RenderBG(rowModulo, baseNTX, 0, -ScrollX, row);
+                    baseNTX ^= 1;
+                    RenderBG(rowModulo, baseNTX, 0, -ScrollX + ScreenWidth, row);
+                }
+                else if (virtualRow >= ScreenHeight && virtualRow < ScreenHeight*2)
+                {
+                    RenderBG(rowModulo, baseNTX, 1, -ScrollX, row);
+                    baseNTX ^= 1;
+                    RenderBG(rowModulo, baseNTX, 1, -ScrollX + ScreenWidth, row);
+                }
+                else if (virtualRow >= ScreenHeight*2 && virtualRow < ScreenHeight*3)
+                {
+                    RenderBG(rowModulo, baseNTX, 0, -ScrollX, row);
+                    baseNTX ^= 1;
+                    RenderBG(rowModulo, baseNTX, 0, -ScrollX + ScreenWidth, row);
+                }
+                else 
+                {
+                    RenderBG(rowModulo, baseNTX, 1, -ScrollX, row);
+                    baseNTX ^= 1;
+                    RenderBG(rowModulo, baseNTX, 1, -ScrollX + ScreenWidth, row);
+                }*/
                 if (row >= ScreenHeight - scrollY)
                 {
                     baseNTY ^= 1;
@@ -944,8 +978,8 @@ namespace Emu6502
                     RenderSprites8x8(row, false);
             }*/
 
-            //Framebuffer[ScreenWidth*row + ScrollX] = 0xFF << 24 | 0xFF0000;
-            //Framebuffer[ScreenWidth * row + ScrollY] = 0xFF << 24 | 0x00FF00;
+            /*Framebuffer[ScreenWidth*row + ScrollX] = 0xFF << 24 | 0xFF0000;
+            Framebuffer[ScreenWidth * row + ScrollY] = 0xFF << 24 | 0x00FF00;*/
         }
 
         private void RaiseVsyncNmi()
