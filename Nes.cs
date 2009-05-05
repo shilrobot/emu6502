@@ -77,9 +77,9 @@ namespace Emu6502
             TotalCpuCycles = 0;
             frameCount = 0;
             Mem.Reset();
+            Ppu.Reset();
             Mapper.Reset();
             Cpu.Reset();
-            Ppu.Reset();
             sw.Start();
         }
 

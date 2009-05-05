@@ -108,8 +108,10 @@ namespace Emu6502
             for (int y = 0; y < 8; ++y)
                 for (int x = 0; x < 8; ++x)
                 {
-                    byte b1 = ppu.PatternTables[addr + y];
-                    byte b2 = ppu.PatternTables[addr + y + 8];
+                    int addr1 = addr + y;
+                    int addr2 = addr + y + 8;
+                    byte b1 = ppu.PatternTables[Ppu.PatternHigh(addr1)][Ppu.PatternLow(addr1)];
+                    byte b2 = ppu.PatternTables[Ppu.PatternHigh(addr2)][Ppu.PatternLow(addr2)];
                     byte bit1 = (byte)((b1 >> (7 - x)) & 0x1);
                     byte bit2 = (byte)((b2 >> (7 - x)) & 0x1);
                     byte result = (byte)(bit2 << 1 | bit1);

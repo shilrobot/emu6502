@@ -22,7 +22,8 @@ namespace Emu6502
         public int[] Framebuffer = new int[ScreenWidth * ScreenHeight];
 
         private Nes nes;
-        public byte[] PatternTables;
+        //public byte[] PatternTables;
+        public byte[][] PatternTables;
         public byte[][] NameAttributeTables;
         public byte[] Palette;
         public byte[] SpriteMem; // OAM stuff
@@ -104,6 +105,10 @@ namespace Emu6502
             Nametable3 = new byte[1024];
             Nametable4 = new byte[1024];
             NameAttributeTables = new byte[4][];
+            // TODO: Only call this from the mapper's init
+            PatternTables = new byte[2][];
+            PatternTables[0] = new byte[0x1000];
+            PatternTables[1] = new byte[0x1000];
             SetMirroring(nes.Rom.MirrorType);
 
             // Matches blargg's startup palette
@@ -439,14 +444,24 @@ namespace Emu6502
         }
 
 
-        public int MirrorHigh(int addr)
+        public static int MirrorHigh(int addr)
         {
             return (addr & 0xC00) >> 10;
         }
 
-        public int MirrorLow(int addr)
+        public static int MirrorLow(int addr)
         {
             return (addr & 0x3FF);
+        }
+
+        public static int PatternHigh(int addr)
+        {
+            return (addr & 0x1000) >> 12;
+        }
+
+        public static int PatternLow(int addr)
+        {
+            return (addr & 0x0FFF);
         }
 
         public byte Read(int addr)
@@ -456,7 +471,7 @@ namespace Emu6502
 
             if(addr >= 0 && addr < 0x2000)
             {
-                return PatternTables[addr];
+                return PatternTables[PatternHigh(addr)][PatternLow(addr)];
             }
             else if(addr >= 0x2000 && addr < 0x3F00)
             {
@@ -484,7 +499,9 @@ namespace Emu6502
                 // Assume this is ROM for now
                 //Console.WriteLine("Writing to ROM! O_O");
                 // Temp. -- allow writing to ROM, overtest.nes does this -- should be mapper specific
-                PatternTables[addr] = val;
+                //PatternTables[addr] = val;
+                // TODO: Check if this is ROM or RAM... depends on mapper
+                PatternTables[PatternHigh(addr)][PatternLow(addr)] = val;
             }
             else if(addr >= 0x2000 && addr < 0x3F00)
             {
@@ -565,8 +582,11 @@ namespace Emu6502
                     int pattern = NameAttributeTables[mirrorHigh][tileY * 0x20 + tileX];
 
                     int patternAddr = bgPatternStart + pattern * 16;
-                    byte b1 = PatternTables[patternAddr + subtileY];
-                    byte b2 = PatternTables[patternAddr + subtileY + 8];
+
+                    int addr1 = patternAddr + subtileY;
+                    int addr2 = patternAddr + subtileY + 8;
+                    byte b1 = PatternTables[PatternHigh(addr1)][PatternLow(addr1)];
+                    byte b2 = PatternTables[PatternHigh(addr2)][PatternLow(addr2)];
 
                     for (int subtileX = 0; subtileX < 8; ++subtileX)
                     {
@@ -610,8 +630,10 @@ namespace Emu6502
             if (flipV)
                 cy = 7 - cy;
 
-            byte b1 = PatternTables[patternAddr + cy];
-            byte b2 = PatternTables[patternAddr + cy + 8];
+            int addr1 = patternAddr + cy;
+            int addr2 = patternAddr + cy + 8;
+            byte b1 = PatternTables[PatternHigh(addr1)][PatternLow(addr1)];
+            byte b2 = PatternTables[PatternHigh(addr2)][PatternLow(addr2)];
 
             for (int n = 0; n < 8; ++n)
             {

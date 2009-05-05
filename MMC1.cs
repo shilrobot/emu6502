@@ -11,6 +11,7 @@ namespace Emu6502
         int shiftReg = 0;
         byte[] PrgRomBank0;
         byte[] PrgRomBank1;
+        byte[][] ChrRomBanks;
 
         private int CtrlReg;
         private int ChrBank0Reg;
@@ -29,11 +30,28 @@ namespace Emu6502
             ChrBank1Reg = 0;
             PrgBankReg = 0;
 
+            int num4kBanks = nes.Rom.ChrRomBanks.Length * 2;
+            ChrRomBanks = new byte[num4kBanks][];
+            for (int i = 0; i < nes.Rom.ChrRomBanks.Length; ++i)
+            {
+                ChrRomBanks[i*2] = new byte[0x1000];
+                ChrRomBanks[i*2+1] = new byte[0x1000];
+                for(int j=0; j<0x1000; ++j)
+                    ChrRomBanks[i*2][j] = nes.Rom.ChrRomBanks[i][j];
+                for (int j = 0; j < 0x1000; ++j)
+                    ChrRomBanks[i * 2 + 1][j] = nes.Rom.ChrRomBanks[i][0x1000 + j];
+            }
+
             // TODO: Do the right thing here... requires changing PPU :(
             if (nes.Rom.ChrRomBanks.Length > 0)
-                nes.Ppu.PatternTables = nes.Rom.ChrRomBanks[0];
-            else
-                nes.Ppu.PatternTables = new byte[8 * 1024];
+            {
+                /*for (int i = 0; i < 0x1000; ++i)
+                    nes.Ppu.PatternTables[0][i] = nes.Rom.ChrRomBanks[0][i];
+                for (int i = 0; i < 0x1000; ++i)
+                    nes.Ppu.PatternTables[1][i] = nes.Rom.ChrRomBanks[0][0x1000 + i];*/
+                nes.Ppu.PatternTables[0] = ChrRomBanks[0];
+                nes.Ppu.PatternTables[1] = ChrRomBanks[1];
+            }
 
             PrgRomBank0 = nes.Rom.PrgRomBanks[0];
             PrgRomBank1 = nes.Rom.PrgRomBanks[nes.Rom.PrgRomBanks.Length - 1];
@@ -83,6 +101,29 @@ namespace Emu6502
             }
         }
 
+        private void UpdateChrBanks()
+        {
+            //nes.RecordEvent("Mapper.MMC1.UpdateChrBanks");
+            if (ChrRomBanks.Length == 0)
+                return;
+
+            // 2x 4kB mode
+            if ((CtrlReg & 0x10) != 0)
+            {
+                int banknum0 = ChrBank0Reg & 0x1F;
+                int banknum1 = ChrBank1Reg & 0x1F;
+                nes.Ppu.PatternTables[0] = ChrRomBanks[banknum0 % ChrRomBanks.Length];
+                nes.Ppu.PatternTables[1] = ChrRomBanks[banknum1 % ChrRomBanks.Length];
+            }
+            // 8 kB mode
+            else
+            {
+                int banknum = ChrBank0Reg & 0x1E;
+                nes.Ppu.PatternTables[0] = ChrRomBanks[banknum % ChrRomBanks.Length];
+                nes.Ppu.PatternTables[1] = ChrRomBanks[(banknum + 1) % ChrRomBanks.Length];
+            }
+        }
+
         private void SetRegister(int whichReg, int regValue)
         {
             //Console.WriteLine("Register{1} = ${0:X2}", regValue, whichReg);
@@ -121,19 +162,21 @@ namespace Emu6502
                 */
 
                 UpdatePrgBanks();
+                UpdateChrBanks();
             }
             // CHR-ROM 0
             else if (whichReg == 1)
             {
                 ChrBank0Reg = regValue;
+                UpdateChrBanks();
                 nes.RecordEvent("Mapper.MMC1.ChrRom0Select");
             }
             // CHR-ROM 1
             else if (whichReg == 2)
             {
                 ChrBank1Reg = regValue;
+                UpdateChrBanks();
                 nes.RecordEvent("Mapper.MMC1.ChrRom1Select");
-
             }
             // PRG-ROM
             else if (whichReg == 3)

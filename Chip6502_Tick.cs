@@ -65,10 +65,10 @@ namespace Emu6502
             ushort addr;
             byte data;
 
-            if (PC == 0xe18a)
+            /*if (PC == 0xe18a)
                 Console.WriteLine("$2002 Read 1: ${0}", Nes.ActiveNes.TotalCpuCycles);
             else if (PC == 0xe18f)
-                Console.WriteLine("$2002 Read 2: ${0}", Nes.ActiveNes.TotalCpuCycles);
+                Console.WriteLine("$2002 Read 2: ${0}", Nes.ActiveNes.TotalCpuCycles);*/
 
 
             unchecked
