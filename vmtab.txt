@@ -1,6 +1,8 @@
 
 LDA {{
 READ;
+if(opcode == 0xAD && addr == 0x2002 && (data & 0x80)!=0)
+	Console.WriteLine("{0},Read $2002", Nes.ActiveNes.TotalCpuCycles);
 A = data;
 SETNZ;
 }}
@@ -54,6 +56,7 @@ SETNZ;
 }}
 
 BIT {{
+Nes.ActiveNes.RecordEvent("Cpu.Instr.BIT");
 //Console.WriteLine("${0:X4}: BIT", PC);
 READ;
 N = (data & 0x80)!=0; // bit 7
@@ -162,6 +165,8 @@ NPC = addr;
 }}
 
 BRK {{
+Nes.ActiveNes.RecordEvent("Cpu.Instr.BRK");
+
 //Console.WriteLine("${0:X4}: BRK", PC);
 // 2nd byte after BRK is skipped
 NPC++;
@@ -178,17 +183,20 @@ NPC = (ushort)(PullWord()+1);
 }}
 
 RTI {{
+Nes.ActiveNes.RecordEvent("Cpu.Instr.RTI");
 //Console.WriteLine("${0:X4}: RTI", PC);
 PullStatus();
 NPC = PullWord();
 }}
 
 PHP {{
+Nes.ActiveNes.RecordEvent("Cpu.Instr.PHP");
 //Console.WriteLine("${0:X4}: PHP", PC);
 PushStatus(true); // PHP writes the B flag as well
 }}
 
 PLP {{
+Nes.ActiveNes.RecordEvent("Cpu.Instr.PLP");
 //Console.WriteLine("${0:X4}: PLP", PC);
 PullStatus();
 }}
@@ -263,21 +271,25 @@ SP = X;
 }}
 
 SED {{
+Nes.ActiveNes.RecordEvent("Cpu.Instr.SED");
 //Console.WriteLine("${0:X4}: SED", PC);
 D=true;
 }}
 
 CLD {{
+Nes.ActiveNes.RecordEvent("Cpu.Instr.CLD");
 //Console.WriteLine("${0:X4}: CLD", PC);
 D=false;
 }}
 
 SEI {{
+Nes.ActiveNes.RecordEvent("Cpu.Instr.SEI");
 //Console.WriteLine("${0:X4}: SEI", PC);
 I = true;
 }}
 
 CLI {{
+Nes.ActiveNes.RecordEvent("Cpu.Instr.CLI");
 //Console.WriteLine("${0:X4}: CLI", PC);
 I = false;
 }}

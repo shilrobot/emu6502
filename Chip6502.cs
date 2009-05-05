@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 
 namespace Emu6502
 {
@@ -36,6 +37,8 @@ namespace Emu6502
 
         private List<ushort> PCHistory = new List<ushort>();
 
+        private StreamWriter fs = new StreamWriter("my_cpu.txt");
+
         public Chip6502(IMemory mem)
         {
             Mem = mem;
@@ -60,17 +63,20 @@ namespace Emu6502
             //ignoreOpcodes = 0;
             SetPC(ReadWord(ResetAddr));
             //Console.WriteLine("6502 Reset -> Jump to ${0:X4}", PC);
+            Nes.ActiveNes.RecordEvent("Cpu.Int.Reset");
         }
 
         // In practice this is connected to the vertical retrace from the PPU
         public void NMI()
         {
+            Console.WriteLine("NMI return value: ${0:X4} @ {1} cy", PC, Nes.ActiveNes.TotalCpuCycles);
             PushWord(PC);
             PushStatus(false);
             I = true;
             SetPC(ReadWord(NMIAddr));
             //Console.WriteLine("6502 NMI -> Jump to ${0:X4}", PC);
             WaitCycles += 7; // Interrupt latency
+            Nes.ActiveNes.RecordEvent("Cpu.Int.NMI");
         }
 
         public void IRQ()
@@ -81,18 +87,19 @@ namespace Emu6502
                 PushStatus(false);
                 I = true;
                 SetPC(ReadWord(IRQAddr));
+                Nes.ActiveNes.RecordEvent("Cpu.Int.IRQ");
                 //Console.WriteLine("6502 IRQ -> Jump to ${0:X4}", PC);
             }
             else
-                ;// Console.WriteLine("6502 IRQ (Ignored)");
+                Nes.ActiveNes.RecordEvent("Cpu.Int.IRQ.Ignored");// Console.WriteLine("6502 IRQ (Ignored)");
         }
 
-        private byte Read(int addr)
+        public byte Read(int addr)
         {
             return Mem.Read(addr);
         }
 
-        private ushort ReadWord(int addr)
+        public ushort ReadWord(int addr)
         {
             return (ushort)(Read(addr) | Read(addr + 1) << 8);
         }

@@ -109,6 +109,7 @@ namespace Emu6502
                     MirrorType = MirrorType.Vertical;
                 else
                     MirrorType = MirrorType.Horizontal;
+                Console.WriteLine("ROM Mirroring={0}", MirrorType);
 
             }
         }

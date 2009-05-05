@@ -77,6 +77,7 @@ namespace Emu6502
             }
             else
             {
+                nes.RecordEvent("Mapper.MMC1.32KBPrgRomSelect");
                 // Switch 32 KB at $C000
                 // TODO
             }
@@ -125,11 +126,13 @@ namespace Emu6502
             else if (whichReg == 1)
             {
                 ChrBank0Reg = regValue;
+                nes.RecordEvent("Mapper.MMC1.ChrRom0Select");
             }
             // CHR-ROM 1
             else if (whichReg == 2)
             {
                 ChrBank1Reg = regValue;
+                nes.RecordEvent("Mapper.MMC1.ChrRom1Select");
 
             }
             // PRG-ROM

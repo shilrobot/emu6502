@@ -370,7 +370,7 @@ namespace Emu6502
                 }
             }*/
 
-            for (int i = 0; i < 64; ++i)
+            /*for (int i = 0; i < 64; ++i)
             {
                 byte B0 = ppu.SpriteMem[i * 4 + 0];
                 byte B1 = ppu.SpriteMem[i * 4 + 1];
@@ -388,7 +388,7 @@ namespace Emu6502
                 if(i == 0 && toggle)
                     color = Color.Black;
                 g.DrawRectangle(new Pen(color, 1), new Rectangle(x, y, 8, (ppu.PpuCtrl & 0x20) != 0 ? 16 : 8));
-            }
+            }*/
 
             toggle = !toggle;
 

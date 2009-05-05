@@ -6,7 +6,6 @@ using System.Diagnostics;
 
 namespace Emu6502
 {
-
     public class Nes
     {
         //public const long PpuTicksPerSecond = 5369318;
@@ -31,6 +30,16 @@ namespace Emu6502
         private Stopwatch sw = new Stopwatch();
         public float FPS;
         private int frameCount = 0;
+
+        public Dictionary<string, int> EventCounters = new Dictionary<string, int>();
+
+        public void RecordEvent(string name)
+        {
+            if (EventCounters.ContainsKey(name))
+                EventCounters[name] += 1;
+            else
+                EventCounters[name] = 1;
+        }
 
         public Nes(string romfile)
         {

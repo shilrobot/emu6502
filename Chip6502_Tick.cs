@@ -70,15 +70,18 @@ namespace Emu6502
             else if (PC == 0xe18f)
                 Console.WriteLine("$2002 Read 2: ${0}", Nes.ActiveNes.TotalCpuCycles);
 
+
             unchecked
             {
                 byte opcode = Mem.Read(PC);
+                //fs.Write("{0:X4} {1:X2} {2:X2} {3:X2} {4:X2}\r\n", PC, opcode, A, X, Y);
                 switch (opcode)
                 {
                     /* BEGIN SWITCH */
 case 0x00:
 {
 NPC = (ushort)(PC+1);
+Nes.ActiveNes.RecordEvent("Cpu.Instr.BRK");
 NPC++;
 PushWord(NPC);
 PushStatus(true);
@@ -120,6 +123,7 @@ break;
 case 0x08:
 {
 NPC = (ushort)(PC+1);
+Nes.ActiveNes.RecordEvent("Cpu.Instr.PHP");
 PushStatus(true);
 }
 break;
@@ -259,6 +263,7 @@ case 0x24:
 {
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
+Nes.ActiveNes.RecordEvent("Cpu.Instr.BIT");
 data = Read(addr);
 N = (data & 0x80)!=0;
 V = (data & 0x40)!=0;
@@ -291,6 +296,7 @@ break;
 case 0x28:
 {
 NPC = (ushort)(PC+1);
+Nes.ActiveNes.RecordEvent("Cpu.Instr.PLP");
 PullStatus();
 }
 break;
@@ -319,6 +325,7 @@ case 0x2C:
 {
 NPC = (ushort)(PC+3);
 addr = ReadWord(PC+1);
+Nes.ActiveNes.RecordEvent("Cpu.Instr.BIT");
 data = Read(addr);
 N = (data & 0x80)!=0;
 V = (data & 0x40)!=0;
@@ -429,8 +436,10 @@ break;
 case 0x40:
 {
 NPC = (ushort)(PC+1);
+Nes.ActiveNes.RecordEvent("Cpu.Instr.RTI");
 PullStatus();
 NPC = PullWord();
+Console.WriteLine("Return from NMI to ${0:X4}", NPC);
 }
 break;
 case 0x41:
@@ -557,6 +566,7 @@ break;
 case 0x58:
 {
 NPC = (ushort)(PC+1);
+Nes.ActiveNes.RecordEvent("Cpu.Instr.CLI");
 I = false;
 }
 break;
@@ -743,6 +753,7 @@ break;
 case 0x78:
 {
 NPC = (ushort)(PC+1);
+Nes.ActiveNes.RecordEvent("Cpu.Instr.SEI");
 I = true;
 }
 break;
@@ -936,6 +947,8 @@ case 0xA1:
 NPC = (ushort)(PC+2);
 addr = ReadWordZP((ushort)(Read(PC+1)+X));
 data = Read(addr);
+if(opcode == 0xAD && addr == 0x2002 && (data & 0x80)!=0)
+ Console.WriteLine("{0},Read $2002", Nes.ActiveNes.TotalCpuCycles);
 A = data;
 Z = (data == 0); N = (data > 127);
 }
@@ -962,6 +975,8 @@ case 0xA5:
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
 data = Read(addr);
+if(opcode == 0xAD && addr == 0x2002 && (data & 0x80)!=0)
+ Console.WriteLine("{0},Read $2002", Nes.ActiveNes.TotalCpuCycles);
 A = data;
 Z = (data == 0); N = (data > 127);
 }
@@ -987,6 +1002,8 @@ case 0xA9:
 {
 NPC = (ushort)(PC+2);
 data = Read(PC+1);
+//if(opcode == 0xAD && addr == 0x2002 && (data & 0x80)!=0)
+ //Console.WriteLine("{0},Read $2002", Nes.ActiveNes.TotalCpuCycles);
 A = data;
 Z = (data == 0); N = (data > 127);
 }
@@ -1013,6 +1030,8 @@ case 0xAD:
 NPC = (ushort)(PC+3);
 addr = ReadWord(PC+1);
 data = Read(addr);
+if(opcode == 0xAD && addr == 0x2002 && (data & 0x80)!=0)
+ Console.WriteLine("{0},Read $2002", Nes.ActiveNes.TotalCpuCycles);
 A = data;
 Z = (data == 0); N = (data > 127);
 }
@@ -1037,6 +1056,8 @@ case 0xB1:
 NPC = (ushort)(PC+2);
 { ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
+if(opcode == 0xAD && addr == 0x2002 && (data & 0x80)!=0)
+ Console.WriteLine("{0},Read $2002", Nes.ActiveNes.TotalCpuCycles);
 A = data;
 Z = (data == 0); N = (data > 127);
 }
@@ -1055,6 +1076,8 @@ case 0xB5:
 NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+X)&0xFF);
 data = Read(addr);
+if(opcode == 0xAD && addr == 0x2002 && (data & 0x80)!=0)
+ Console.WriteLine("{0},Read $2002", Nes.ActiveNes.TotalCpuCycles);
 A = data;
 Z = (data == 0); N = (data > 127);
 }
@@ -1079,6 +1102,8 @@ case 0xB9:
 NPC = (ushort)(PC+3);
 { ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
+if(opcode == 0xAD && addr == 0x2002 && (data & 0x80)!=0)
+ Console.WriteLine("{0},Read $2002", Nes.ActiveNes.TotalCpuCycles);
 A = data;
 Z = (data == 0); N = (data > 127);
 }
@@ -1105,6 +1130,8 @@ case 0xBD:
 NPC = (ushort)(PC+3);
 { ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
 data = Read(addr);
+if(opcode == 0xAD && addr == 0x2002 && (data & 0x80)!=0)
+ Console.WriteLine("{0},Read $2002", Nes.ActiveNes.TotalCpuCycles);
 A = data;
 Z = (data == 0); N = (data > 127);
 }
@@ -1261,6 +1288,7 @@ break;
 case 0xD8:
 {
 NPC = (ushort)(PC+1);
+Nes.ActiveNes.RecordEvent("Cpu.Instr.CLD");
 D=false;
 }
 break;
@@ -1446,6 +1474,7 @@ break;
 case 0xF8:
 {
 NPC = (ushort)(PC+1);
+Nes.ActiveNes.RecordEvent("Cpu.Instr.SED");
 D=true;
 }
 break;
@@ -1488,6 +1517,7 @@ break;
                     default:
                         // TODO: Make breaking on this opcode actually fucking work
                         NPC = (ushort)(PC + 1);
+                        Nes.ActiveNes.RecordEvent("Cpu.IllegalOpcode");
                         /*if (ignoreOpcodes < 10)
                         {
                             if(false) Console.WriteLine("Invalid Opcode ${0:X2} @ ${1:X4}: treating as NOP", opcode, PC);

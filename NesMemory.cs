@@ -41,6 +41,8 @@ namespace Emu6502
                 case 0x2000:
                 case 0x3000:
                     {
+                        Nes.ActiveNes.RecordEvent(String.Format("Mem.IO.${0:X4}.Read", addr));
+
                         addr = 0x2000 | (addr & 0x7);
 
                         byte b;
@@ -69,6 +71,8 @@ namespace Emu6502
                 case 0x4000:
                 case 0x5000:
                     {
+                        Nes.ActiveNes.RecordEvent(String.Format("Mem.IO.${0:X4}.Read", addr));
+
                         byte b = 0;
                         if (addr == 0x4016)
                         {
@@ -97,6 +101,7 @@ namespace Emu6502
                 case 0x6000:
                 case 0x7000:
                     // TODO: Mirroring? Mapper specific?
+                    Nes.ActiveNes.RecordEvent("Mem.SaveRam.Read");
                     return SaveRAM[addr & 0x1FFF];
 
                 case 0x8000:
@@ -136,6 +141,7 @@ namespace Emu6502
             else if (addr < 0x4000)
             {
                 addr = 0x2000 | (addr & 0x7);
+                Nes.ActiveNes.RecordEvent(String.Format("Mem.IO.${0:X4}.Write", addr));
                 /*if (addr != 0x2003)
                     Console.WriteLine("W IO ${0:X4} = ${1:X2}", addr, val);*/
 
@@ -171,6 +177,8 @@ namespace Emu6502
             {
                 //Console.WriteLine("W IO ${0:X4} = ${1:X2}", addr, val);
 
+                Nes.ActiveNes.RecordEvent(String.Format("Mem.IO.${0:X4}.Write", addr));
+
                 // Fake DMA
                 if (addr == 0x4014)
                 {
@@ -198,16 +206,19 @@ namespace Emu6502
             }
             else if (addr < 0x6000)
             {
+                Nes.ActiveNes.RecordEvent("Mem.ExpansionROM.Write");
                 //Console.WriteLine(" -> Expansion ROM ${0:X4} = ${0:X2}", addr, val);
             }
             else if (addr < 0x8000)
             {
+                Nes.ActiveNes.RecordEvent("Mem.SaveRam.Write");
                 SaveRAM[addr & 0x1FFF] = val;
                 //Console.WriteLine(" -> Save RAM ${0:X4} = ${0:X2}", addr, val);
                 // TODO
             }
             else
             {
+                Nes.ActiveNes.RecordEvent("Mem.PrgRom.Write");
                 nes.Mapper.PrgRomWrite(addr, val);
                 //Console.WriteLine(" -> PRG-ROM ${0:X4} = ${0:X2}", addr, val);
             }

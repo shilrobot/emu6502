@@ -104,7 +104,7 @@ namespace Emu6502
             Nametable3 = new byte[1024];
             Nametable4 = new byte[1024];
             NameAttributeTables = new byte[4][];
-            SetMirroring(MirrorType.Vertical);//nes.Rom.MirrorType);
+            SetMirroring(nes.Rom.MirrorType);
 
             // Matches blargg's startup palette
             Palette = new byte[32] {
@@ -159,6 +159,12 @@ namespace Emu6502
             //Console.WriteLine("PPUCTRL = ${0:X2} PC = ${1:X4}", val, nes.Cpu.PC);
             PpuCtrl = val;
 
+            if ((PpuCtrl & 0x80) != 0)
+                nes.RecordEvent("Ppu.Vbl.NmiDisabled");
+            else
+                nes.RecordEvent("Ppu.Vbl.NmiEnabled");
+
+
             /*if ((PpuCtrl & 0x80) != 0)
                 fs.WriteLine("{0},{1},VBL NMI Enabled", nes.TotalCpuCycles, VsyncFlag?1:0);
             else
@@ -185,9 +191,10 @@ namespace Emu6502
             if (VsyncFlag)
             {
                 //fs.WriteLine("{0},{1},VBL flag read", nes.TotalCpuCycles, VsyncFlag?1:0);
-                //Console.WriteLine("PPUSTATUS read returned VSync flag PC=${0:X4}", nes.Cpu.PC);
+                Console.WriteLine("PPUSTATUS read returned VSync flag PC=${0:X4} @ {1} cy", nes.Cpu.PC, nes.TotalCpuCycles);
                 status |= 0x80;
 
+                nes.RecordEvent("Ppu.Vbl.FlagRead");
 
                 fs.WriteLine("{0},{1}", nes.TotalCpuCycles, VsyncFlag ? 1 : 0);
                 VsyncFlag = false;
@@ -198,7 +205,6 @@ namespace Emu6502
 
             if (SpriteHitFlag)
                 status |= 0x40;
-
 
             /*if (ScrollLatch != 0)
                 ;// Console.WriteLine("Resetting SCROLL latch");
@@ -627,7 +633,10 @@ namespace Emu6502
                             color = palette3;
 
                         if (spriteZero && BGBuffer[spriteX + n] != 0)
+                        {
+                            nes.RecordEvent("Ppu.Sprite0Hit");
                             SpriteHitFlag = true; // TODO: Store which cycle it happened on
+                        }
 
                         SpriteBuffer[spriteX + n] = color;
                         SpritePriorityBuffer[spriteX + n] = priority;
@@ -898,12 +907,12 @@ namespace Emu6502
                 Framebuffer[fbPos++] = color;
             }
 
-            if (spriteFlagBefore != SpriteHitFlag)
+            /*if (spriteFlagBefore != SpriteHitFlag)
             {
                 fbPos = row * ScreenWidth;
                 for (int x = 0; x < ScreenWidth; ++x)
                     Framebuffer[fbPos++] = 0xFF << 24 | 0xFF0000;
-            }
+            }*/
 
             /*if (enableSprites)
             {
@@ -917,18 +926,34 @@ namespace Emu6502
             //Framebuffer[ScreenWidth * row + ScrollY] = 0xFF << 24 | 0x00FF00;
         }
 
+        private void RaiseVsyncNmi()
+        {
+            if ((PpuCtrl & 0x80) != 0)
+            {
+                nes.RecordEvent("Ppu.Vbl.NmiRaised");
+                //fs.WriteLine("{0},1,NMI Triggered", nes.TotalCpuCycles);
+                nes.Cpu.NMI();
+            }
+            else
+                nes.RecordEvent("Ppu.Vbl.NmiNotRaised");
+        }
+
         private void Vsync()
         {
             SpriteHitFlag = false;
             VsyncFlag = true;
             VsyncSignalToMainLoop = true;
-            if ((PpuCtrl & 0x80) != 0)
+            /*if ((PpuCtrl & 0x80) != 0)
             {
+                nes.RecordEvent("Ppu.Vbl.NmiRaised");
                 //fs.WriteLine("{0},1,NMI Triggered", nes.TotalCpuCycles);
                 nes.Cpu.NMI();
             }
             else
-                ;// Console.WriteLine("VSync NMI Ignored");
+                nes.RecordEvent("Ppu.Vbl.NmiNotRaised");*/
+
+            nes.RecordEvent("Ppu.Vbl.Total");
+            // Console.WriteLine("VSync NMI Ignored");
         }
 
         private void BeginScanline()
@@ -980,6 +1005,9 @@ namespace Emu6502
             {
                 BeginScanline();
             }
+
+            if (FrameCycle == 3)
+                RaiseVsyncNmi();
 
             FrameCycle++;
             ScanlineCycle++;

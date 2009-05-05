@@ -142,11 +142,19 @@ namespace Emu6502
             xLabel.Text = DecodeReg("X", nes.Cpu.X);
             yLabel.Text = DecodeReg("Y", nes.Cpu.Y);
 
+
             cFlag.Checked = nes.Cpu.C;
             zFlag.Checked = nes.Cpu.Z;
             iFlag.Checked = nes.Cpu.I;
             vFlag.Checked = nes.Cpu.V;
             nFlag.Checked = nes.Cpu.N;
+
+            ivectorLabel.Text = String.Format("Reset: ${0:X4} = ${1:X4}\r\n" +
+                "  NMI: ${2:X4} = ${3:X4}\r\n" +
+                "  IRQ: ${4:X4} = ${5:X4}\r\n",
+                Chip6502.ResetAddr, nes.Cpu.ReadWord(Chip6502.ResetAddr),
+                Chip6502.NMIAddr, nes.Cpu.ReadWord(Chip6502.NMIAddr),
+                Chip6502.IRQAddr, nes.Cpu.ReadWord(Chip6502.IRQAddr));
 
             //string dis = Disassembler.Disassemble(nes.Mem, nes.Cpu.PC - 16, 128);
             //disassembly.Text = dis;
@@ -279,5 +287,21 @@ namespace Emu6502
                 disassembly2.Find(dlg.Result);
             }
         }
+
+        private void eventsBtn_Click(object sender, EventArgs e)
+        {
+            List<string> eventNames = new List<string>(nes.EventCounters.Keys);
+            eventNames.Sort();
+            string result = "";
+            foreach (string name in eventNames)
+                result += String.Format("{0}={1}\r\n", name, nes.EventCounters[name]);
+            MessageBox.Show(result);
+        }
+
+        private void clearEvents_Click(object sender, EventArgs e)
+        {
+            nes.EventCounters.Clear();
+        }
+
     }
 }
