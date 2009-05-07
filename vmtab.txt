@@ -55,12 +55,10 @@ SETNZ;
 
 BIT {{
 Nes.ActiveNes.RecordEvent("Cpu.Instr.BIT");
-//Console.WriteLine("${0:X4}: BIT", PC);
 READ;
 N = (data & 0x80)!=0; // bit 7
 V = (data & 0x40)!=0; // bit 6
 Z = (A & data) == 0;
-
 }}
 
 CMP {{
@@ -84,7 +82,6 @@ data = (byte)(Y - data);
 SETNZ;
 }}
 
-// TODO: Test the crap out of this
 ADC {{
 READ;
 int result = A + data + (C?1:0);
@@ -94,7 +91,6 @@ data = A = (byte)result;
 SETNZ;
 }}
 
-// TODO: Test the crap out of this
 SBC {{
 READ;
 int result = A - data - (C?0:1);

@@ -135,7 +135,7 @@ case 0x05:
 {
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
-data = Read(addr);
+data = RAM[addr];
 data |= A;
 A = data;
 Z = (data == 0); N = (data > 127);
@@ -146,10 +146,10 @@ case 0x06:
 {
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
-data = Read(addr);
+data = RAM[addr];
 C = (data & 0x80)!=0;
 data <<= 1;
-Write(addr, data);
+RAM[addr] = data;
 Z = (data == 0); N = (data > 127);
 WaitCycles += 5 * 3;
 }
@@ -228,7 +228,7 @@ case 0x15:
 {
 NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+X)&0xFF);
-data = Read(addr);
+data = RAM[addr];
 data |= A;
 A = data;
 Z = (data == 0); N = (data > 127);
@@ -239,10 +239,10 @@ case 0x16:
 {
 NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+X)&0xFF);
-data = Read(addr);
+data = RAM[addr];
 C = (data & 0x80)!=0;
 data <<= 1;
-Write(addr, data);
+RAM[addr] = data;
 Z = (data == 0); N = (data > 127);
 WaitCycles += 6 * 3;
 }
@@ -313,7 +313,7 @@ case 0x24:
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
 Nes.ActiveNes.RecordEvent("Cpu.Instr.BIT");
-data = Read(addr);
+data = RAM[addr];
 N = (data & 0x80)!=0;
 V = (data & 0x40)!=0;
 Z = (A & data) == 0;
@@ -324,7 +324,7 @@ case 0x25:
 {
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
-data = Read(addr);
+data = RAM[addr];
 data &= A;
 A = data;
 Z = (data == 0); N = (data > 127);
@@ -335,12 +335,12 @@ case 0x26:
 {
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
-data = Read(addr);
+data = RAM[addr];
 bool oldC = C;
 C = (data & 0x80)!=0;
 data <<= 1;
 if(oldC) data |= 1;
-Write(addr, data);
+RAM[addr] = data;
 Z = (data == 0); N = (data > 127);
 WaitCycles += 5 * 3;
 }
@@ -435,7 +435,7 @@ case 0x35:
 {
 NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+X)&0xFF);
-data = Read(addr);
+data = RAM[addr];
 data &= A;
 A = data;
 Z = (data == 0); N = (data > 127);
@@ -446,12 +446,12 @@ case 0x36:
 {
 NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+X)&0xFF);
-data = Read(addr);
+data = RAM[addr];
 bool oldC = C;
 C = (data & 0x80)!=0;
 data <<= 1;
 if(oldC) data |= 1;
-Write(addr, data);
+RAM[addr] = data;
 Z = (data == 0); N = (data > 127);
 WaitCycles += 6 * 3;
 }
@@ -523,7 +523,7 @@ case 0x45:
 {
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
-data = Read(addr);
+data = RAM[addr];
 data ^= A;
 A = data;
 Z = (data == 0); N = (data > 127);
@@ -534,10 +534,10 @@ case 0x46:
 {
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
-data = Read(addr);
+data = RAM[addr];
 C = (data & 0x01)!=0;
 data >>= 1;
-Write(addr, data);
+RAM[addr] = data;
 Z = (data == 0); N = (data > 127);
 WaitCycles += 5 * 3;
 }
@@ -623,7 +623,7 @@ case 0x55:
 {
 NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+X)&0xFF);
-data = Read(addr);
+data = RAM[addr];
 data ^= A;
 A = data;
 Z = (data == 0); N = (data > 127);
@@ -634,10 +634,10 @@ case 0x56:
 {
 NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+X)&0xFF);
-data = Read(addr);
+data = RAM[addr];
 C = (data & 0x01)!=0;
 data >>= 1;
-Write(addr, data);
+RAM[addr] = data;
 Z = (data == 0); N = (data > 127);
 WaitCycles += 6 * 3;
 }
@@ -708,7 +708,7 @@ case 0x65:
 {
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
-data = Read(addr);
+data = RAM[addr];
 int result = A + data + (C?1:0);
 C = (result & 0xFF00) != 0;
 V = ( (~(A ^ data) & (A ^ (byte)result)) &0x80) != 0;
@@ -721,12 +721,12 @@ case 0x66:
 {
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
-data = Read(addr);
+data = RAM[addr];
 bool oldC = C;
 C = (data & 0x01)!=0;
 data >>= 1;
 if(oldC) data |= 0x80;
-Write(addr, data);
+RAM[addr] = data;
 Z = (data == 0); N = (data > 127);
 WaitCycles += 5 * 3;
 }
@@ -824,7 +824,7 @@ case 0x75:
 {
 NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+X)&0xFF);
-data = Read(addr);
+data = RAM[addr];
 int result = A + data + (C?1:0);
 C = (result & 0xFF00) != 0;
 V = ( (~(A ^ data) & (A ^ (byte)result)) &0x80) != 0;
@@ -837,12 +837,12 @@ case 0x76:
 {
 NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+X)&0xFF);
-data = Read(addr);
+data = RAM[addr];
 bool oldC = C;
 C = (data & 0x01)!=0;
 data >>= 1;
 if(oldC) data |= 0x80;
-Write(addr, data);
+RAM[addr] = data;
 Z = (data == 0); N = (data > 127);
 WaitCycles += 6 * 3;
 }
@@ -909,7 +909,7 @@ case 0x84:
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
 data = Y;
-Write(addr, data);
+RAM[addr] = data;
 WaitCycles += 3 * 3;
 }
 break;
@@ -918,7 +918,7 @@ case 0x85:
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
 data = A;
-Write(addr, data);
+RAM[addr] = data;
 WaitCycles += 3 * 3;
 }
 break;
@@ -927,7 +927,7 @@ case 0x86:
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
 data = X;
-Write(addr, data);
+RAM[addr] = data;
 WaitCycles += 3 * 3;
 }
 break;
@@ -997,7 +997,7 @@ case 0x94:
 NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+X)&0xFF);
 data = Y;
-Write(addr, data);
+RAM[addr] = data;
 WaitCycles += 4 * 3;
 }
 break;
@@ -1006,7 +1006,7 @@ case 0x95:
 NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+X)&0xFF);
 data = A;
-Write(addr, data);
+RAM[addr] = data;
 WaitCycles += 4 * 3;
 }
 break;
@@ -1015,7 +1015,7 @@ case 0x96:
 NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+Y)&0xFF);
 data = X;
-Write(addr, data);
+RAM[addr] = data;
 WaitCycles += 4 * 3;
 }
 break;
@@ -1085,7 +1085,7 @@ case 0xA4:
 {
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
-data = Read(addr);
+data = RAM[addr];
 Y = data;
 Z = (data == 0); N = (data > 127);
 WaitCycles += 3 * 3;
@@ -1095,7 +1095,7 @@ case 0xA5:
 {
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
-data = Read(addr);
+data = RAM[addr];
 A = data;
 Z = (data == 0); N = (data > 127);
 WaitCycles += 3 * 3;
@@ -1105,7 +1105,7 @@ case 0xA6:
 {
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
-data = Read(addr);
+data = RAM[addr];
 X = data;
 Z = (data == 0); N = (data > 127);
 WaitCycles += 3 * 3;
@@ -1189,7 +1189,7 @@ case 0xB4:
 {
 NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+X)&0xFF);
-data = Read(addr);
+data = RAM[addr];
 Y = data;
 Z = (data == 0); N = (data > 127);
 WaitCycles += 4 * 3;
@@ -1199,7 +1199,7 @@ case 0xB5:
 {
 NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+X)&0xFF);
-data = Read(addr);
+data = RAM[addr];
 A = data;
 Z = (data == 0); N = (data > 127);
 WaitCycles += 4 * 3;
@@ -1209,7 +1209,7 @@ case 0xB6:
 {
 NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+Y)&0xFF);
-data = Read(addr);
+data = RAM[addr];
 X = data;
 Z = (data == 0); N = (data > 127);
 WaitCycles += 4 * 3;
@@ -1296,7 +1296,7 @@ case 0xC4:
 {
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
-data = Read(addr);
+data = RAM[addr];
 C = Y >= data;
 data = (byte)(Y - data);
 Z = (data == 0); N = (data > 127);
@@ -1307,7 +1307,7 @@ case 0xC5:
 {
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
-data = Read(addr);
+data = RAM[addr];
 C = A >= data;
 data = (byte)(A - data);
 Z = (data == 0); N = (data > 127);
@@ -1318,9 +1318,9 @@ case 0xC6:
 {
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
-data = Read(addr);
+data = RAM[addr];
 --data;
-Write(addr, data);
+RAM[addr] = data;
 Z = (data == 0); N = (data > 127);
 WaitCycles += 5 * 3;
 }
@@ -1408,7 +1408,7 @@ case 0xD5:
 {
 NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+X)&0xFF);
-data = Read(addr);
+data = RAM[addr];
 C = A >= data;
 data = (byte)(A - data);
 Z = (data == 0); N = (data > 127);
@@ -1419,9 +1419,9 @@ case 0xD6:
 {
 NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+X)&0xFF);
-data = Read(addr);
+data = RAM[addr];
 --data;
-Write(addr, data);
+RAM[addr] = data;
 Z = (data == 0); N = (data > 127);
 WaitCycles += 6 * 3;
 }
@@ -1494,7 +1494,7 @@ case 0xE4:
 {
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
-data = Read(addr);
+data = RAM[addr];
 C = X >= data;
 data = (byte)(X - data);
 Z = (data == 0); N = (data > 127);
@@ -1505,7 +1505,7 @@ case 0xE5:
 {
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
-data = Read(addr);
+data = RAM[addr];
 int result = A - data - (C?0:1);
 C = (result & 0xFF00) == 0;
 V = ( ((A ^ data) & (A ^ (byte)result)) &0x80) != 0;
@@ -1518,9 +1518,9 @@ case 0xE6:
 {
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
-data = Read(addr);
+data = RAM[addr];
 ++data;
-Write(addr, data);
+RAM[addr] = data;
 Z = (data == 0); N = (data > 127);
 WaitCycles += 5 * 3;
 }
@@ -1611,7 +1611,7 @@ case 0xF5:
 {
 NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+X)&0xFF);
-data = Read(addr);
+data = RAM[addr];
 int result = A - data - (C?0:1);
 C = (result & 0xFF00) == 0;
 V = ( ((A ^ data) & (A ^ (byte)result)) &0x80) != 0;
@@ -1624,9 +1624,9 @@ case 0xF6:
 {
 NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+X)&0xFF);
-data = Read(addr);
+data = RAM[addr];
 ++data;
-Write(addr, data);
+RAM[addr] = data;
 Z = (data == 0); N = (data > 127);
 WaitCycles += 6 * 3;
 }
