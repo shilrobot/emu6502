@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.ivectorLabel = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.cFlag = new System.Windows.Forms.CheckBox();
             this.zFlag = new System.Windows.Forms.CheckBox();
@@ -61,7 +62,6 @@
             this.eventsBtn = new System.Windows.Forms.Button();
             this.clearEvents = new System.Windows.Forms.Button();
             this.disassembly2 = new Emu6502.DisassemblyWindow();
-            this.ivectorLabel = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -91,6 +91,15 @@
             this.groupBox1.TabIndex = 2;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "CPU Status";
+            // 
+            // ivectorLabel
+            // 
+            this.ivectorLabel.Location = new System.Drawing.Point(10, 187);
+            this.ivectorLabel.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
+            this.ivectorLabel.Name = "ivectorLabel";
+            this.ivectorLabel.Size = new System.Drawing.Size(188, 74);
+            this.ivectorLabel.TabIndex = 13;
+            this.ivectorLabel.Text = "<interrupt vectors>";
             // 
             // label1
             // 
@@ -402,15 +411,6 @@
             this.disassembly2.TabIndex = 1;
             this.disassembly2.Text = "disassemblyWindow1";
             // 
-            // ivectorLabel
-            // 
-            this.ivectorLabel.Location = new System.Drawing.Point(10, 187);
-            this.ivectorLabel.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
-            this.ivectorLabel.Name = "ivectorLabel";
-            this.ivectorLabel.Size = new System.Drawing.Size(188, 74);
-            this.ivectorLabel.TabIndex = 13;
-            this.ivectorLabel.Text = "<interrupt vectors>";
-            // 
             // Debugger
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
@@ -431,6 +431,7 @@
             this.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             this.Name = "Debugger";
             this.Text = "Debugger";
+            this.Load += new System.EventHandler(this.Debugger_Load);
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.Debugger_FormClosed);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();

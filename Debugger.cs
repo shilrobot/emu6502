@@ -10,6 +10,7 @@ using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using System.Runtime.InteropServices;
+using System.IO;
 
 namespace Emu6502
 {
@@ -19,10 +20,21 @@ namespace Emu6502
         private PpuOutput outputWindow;
         private Stopwatch sw = new Stopwatch();
 
-        public Debugger(Nes nes)
+        public Debugger()
         {
             InitializeComponent();
-            this.nes = nes;
+
+
+            OpenFileDialog dlg = new OpenFileDialog();
+            dlg.InitialDirectory = Directory.GetCurrentDirectory();// @"p:\csharp\emu6502\roms";
+            if (dlg.ShowDialog() != DialogResult.OK)
+            {
+                Application.Exit();
+                return;
+            }
+
+
+            nes = new Nes(dlg.FileName);
 
             UpdateScreen();
             UpdateTitle();
@@ -34,7 +46,6 @@ namespace Emu6502
             disassembly2.Update();
             disassembly2.SelectAddress(nes.Cpu.PC);
             sw.Start();
-            this.Focus();
         }
 
         private void UpdateTitle()
@@ -311,6 +322,16 @@ namespace Emu6502
         private void clearEvents_Click(object sender, EventArgs e)
         {
             nes.EventCounters.Clear();
+        }
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        private void Debugger_Load(object sender, EventArgs e)
+        {
+            //outputWindow.Focus();
+            SetForegroundWindow(outputWindow.Handle);
         }
 
     }

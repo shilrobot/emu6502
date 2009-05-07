@@ -26,13 +26,8 @@ namespace Emu6502
             /*Rom r = new Rom("Roms/Mega Man 2 (U).nes");
             Rom r2 = new Rom("Roms/Castlevania (E).nes");*/
 
-            OpenFileDialog dlg = new OpenFileDialog();
-            dlg.InitialDirectory = Directory.GetCurrentDirectory();// @"p:\csharp\emu6502\roms";
-            if (dlg.ShowDialog() != DialogResult.OK)
-                return;
-
-            Nes nes = new Nes(dlg.FileName);
-            nes.Cpu.Paused = true;
+            //Nes nes = new Nes(dlg.FileName);
+            //nes.Cpu.Paused = true;
 
 #if false
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
@@ -51,7 +46,7 @@ namespace Emu6502
             Console.WriteLine("PPU Speed: {0:0.00} MHz", (max / secs) / 1.0e6);
 #endif
 
-            Application.Run(new Debugger(nes));
+            Application.Run(new Debugger());
 
             return;
         }
