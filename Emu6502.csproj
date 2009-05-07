@@ -59,9 +59,22 @@
     <Compile Include="AddressEntryDlg.Designer.cs">
       <DependentUpon>AddressEntryDlg.cs</DependentUpon>
     </Compile>
+    <Compile Include="BenchmarkDlg.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="BenchmarkDlg.Designer.cs">
+      <DependentUpon>BenchmarkDlg.cs</DependentUpon>
+    </Compile>
     <Compile Include="BreakpointManager.cs" />
     <Compile Include="Chip6502.cs" />
     <Compile Include="Chip6502_Tick.cs" />
+    <Compile Include="MainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MainForm.Designer.cs">
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="NesManager.cs" />
     <Compile Include="Controller.cs" />
     <Compile Include="Debugger.cs">
       <SubType>Form</SubType>
@@ -118,6 +131,9 @@
     <EmbeddedResource Include="AddressEntryDlg.resx">
       <DependentUpon>AddressEntryDlg.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="BenchmarkDlg.resx">
+      <DependentUpon>BenchmarkDlg.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Debugger.resx">
       <DependentUpon>Debugger.cs</DependentUpon>
     </EmbeddedResource>
@@ -132,6 +148,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Breakpoints.resx">
       <DependentUpon>Breakpoints.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MainForm.resx">
+      <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="PpuDebug.resx">
       <DependentUpon>PpuDebug.cs</DependentUpon>

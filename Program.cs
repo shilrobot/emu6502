@@ -19,11 +19,15 @@ namespace Emu6502
             //Application.Run(new Form1());
             //Application.Run(new Debugger());
 
+            BenchmarkDlg bdlg = new BenchmarkDlg();
+            bdlg.ShowDialog();
+            return;
+
             /*Rom r = new Rom("Roms/Mega Man 2 (U).nes");
             Rom r2 = new Rom("Roms/Castlevania (E).nes");*/
 
             OpenFileDialog dlg = new OpenFileDialog();
-            dlg.InitialDirectory = @"p:\csharp\emu6502\roms";
+            dlg.InitialDirectory = Directory.GetCurrentDirectory();// @"p:\csharp\emu6502\roms";
             if (dlg.ShowDialog() != DialogResult.OK)
                 return;
 

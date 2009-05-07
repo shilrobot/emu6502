@@ -1,5 +1,7 @@
 
 #define SETNZ Z = (data == 0); N = (data > 127);
+//#define SETNZ DeferZ = DeferN = data;
+//#define SETNZ goto SetNZ;
 
 #define RD(addr) Read(addr)
 #define RDW(addr) ReadWord(addr)
@@ -19,16 +21,16 @@
 #define AGEN_ABSX	{ \
 ushort baseAddr = HILO; \
 addr = (ushort)(baseAddr+X); \
-if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) \
-		WaitCycles++; \
+if(CYCLES == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) \
+		WaitCycles+=3; \
 }
 
 // Extra cycle if we cross a page on a 4-cycle opcode
 #define AGEN_ABSY	{ \
 ushort baseAddr = HILO; \
 addr = (ushort)(baseAddr+Y); \
-if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) \
-		WaitCycles++; \
+if(CYCLES == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) \
+		WaitCycles+=3; \
 }
 
 // Only used for jump indirect -- simulate JMP INDIRECT page wraparound "bug"
@@ -45,8 +47,8 @@ if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) \
 #define AGEN_INDY	{ \
 	ushort baseAddr = ReadWordZP(LO); \
 	addr = (ushort)(baseAddr+Y); \
-	if(Cycles[opcode] == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) \
-		WaitCycles++; \
+	if(CYCLES == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) \
+		WaitCycles+=3; \
 }
 #define AGEN_IMPL
 #define AGEN_REL
@@ -86,12 +88,12 @@ if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) \
 // Taken branches crossing page boundaries take 4 cycles.
 // Page boundary cross is defined as when the high byte of the next instruction != the high byte of the taken target.
 #define BRANCH(cond) if(cond) { \
-	WaitCycles++; \
-	byte lo = LO; \
-	int offset = (lo <= 127) ? lo : lo - 256; \
+	int offset = (sbyte)LO; \
 	ushort takenTarget = (ushort)(PC+2+offset); \
-	if((takenTarget & 0xFF00) != (NPC & 0xFF00)) \
-		WaitCycles++; \
+	if((takenTarget >> 8) != (NPC >> 8)) \
+		WaitCycles += 2*3; \
+	else \
+		WaitCycles += 3; \
 	NPC = takenTarget; \
 }
 

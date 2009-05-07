@@ -119,6 +119,7 @@ namespace Emu6502
             pp.PresentationInterval = PresentInterval.Default; // TODO
             pp.RenderTargetUsage = RenderTargetUsage.PreserveContents;
             pp.SwapEffect = SwapEffect.Discard;
+            pp.PresentationInterval = PresentInterval.Immediate;
 
             device = new GraphicsDevice(GraphicsAdapter.DefaultAdapter,
                                            DeviceType.Hardware,
@@ -288,6 +289,7 @@ namespace Emu6502
                 device.Clear(Microsoft.Xna.Framework.Graphics.Color.Blue);*/
 
             device.Present();
+
 
             //String hud = String.Format("FPS {0:0.0}", nes.FPS);//\n{1}", nes.FPS, ppu.Mirroring);
             //e.Graphics.DrawString(hud, new Font("Courier New", 8), new SolidBrush(System.Drawing.Color.White), 0, 0);

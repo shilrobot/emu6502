@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Diagnostics;
 
 namespace Emu6502
 {
@@ -24,6 +25,46 @@ namespace Emu6502
             foreach (string s in encountered.Keys)
             {
                 sw.WriteLine("{0},{1}", s, encountered[s]);
+            }
+
+
+        }
+
+        private static Stopwatch sw = new Stopwatch();
+        private static Dictionary<string, long> timings = new Dictionary<string, long>();
+        private static Dictionary<string, long> freqs = new Dictionary<string, long>();
+
+        private static void BeginTiming()
+        {
+            sw.Reset();
+            sw.Start();
+        }
+
+        private static void EndTiming(string instrName)
+        {
+            sw.Stop();
+            if (timings.ContainsKey(instrName))
+            {
+                timings[instrName] += sw.ElapsedTicks;
+                freqs[instrName]++;
+            }
+            else
+            {
+                timings[instrName] = sw.ElapsedTicks;
+                freqs[instrName] = 1;
+            }
+        }
+
+        public static void SaveTimings()
+        {
+            using(StreamWriter sw = new StreamWriter("timings.csv"))
+            {
+                foreach (string s in timings.Keys)
+                {
+                    long n = freqs[s];
+                    long t = timings[s];
+                    sw.WriteLine("{0},{1},{2},{3}", s, n, t / (double)n, t);
+                }
             }
         }
         
@@ -48,33 +89,22 @@ namespace Emu6502
         /*0xF0*/ 2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
         };
 
-        public void Tick()
+        public void Run(int maxCycles)
         {
-            /*if (Paused)
-                return;
+            //return;
 
-            if (WaitCycles > 1)
+            //unchecked
+            //for(int n=0; n<20; ++n)
+            while (WaitCycles <= maxCycles)
             {
-                WaitCycles--;
-                return;
-            }
-            else
-                WaitCycles = 0;*/
-            
-            ushort NPC;
-            ushort addr;
-            byte data;
+                maxCycles -= WaitCycles;
+                WaitCycles = 0;
 
-            /*if (PC == 0xe18a)
-                Console.WriteLine("$2002 Read 1: ${0}", Nes.ActiveNes.TotalCpuCycles);
-            else if (PC == 0xe18f)
-                Console.WriteLine("$2002 Read 2: ${0}", Nes.ActiveNes.TotalCpuCycles);*/
+                ushort NPC;
+                ushort addr;
+                byte data;
 
-
-            unchecked
-            {
                 byte opcode = Mem.Read(PC);
-                //fs.Write("{0:X4} {1:X2} {2:X2} {3:X2} {4:X2}\r\n", PC, opcode, A, X, Y);
                 switch (opcode)
                 {
                     /* BEGIN SWITCH */
@@ -87,6 +117,7 @@ PushWord(NPC);
 PushStatus(true);
 I = true;
 NPC = ReadWord(IRQAddr);
+WaitCycles += 7 * 3;
 }
 break;
 case 0x01:
@@ -97,6 +128,7 @@ data = Read(addr);
 data |= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 6 * 3;
 }
 break;
 case 0x05:
@@ -107,6 +139,7 @@ data = Read(addr);
 data |= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 3 * 3;
 }
 break;
 case 0x06:
@@ -118,6 +151,7 @@ C = (data & 0x80)!=0;
 data <<= 1;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 5 * 3;
 }
 break;
 case 0x08:
@@ -125,6 +159,7 @@ case 0x08:
 NPC = (ushort)(PC+1);
 Nes.ActiveNes.RecordEvent("Cpu.Instr.PHP");
 PushStatus(true);
+WaitCycles += 3 * 3;
 }
 break;
 case 0x09:
@@ -134,6 +169,7 @@ data = Read(PC+1);
 data |= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0x0A:
@@ -144,6 +180,7 @@ C = (data & 0x80)!=0;
 data <<= 1;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0x0D:
@@ -154,6 +191,7 @@ data = Read(addr);
 data |= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x0E:
@@ -165,22 +203,25 @@ C = (data & 0x80)!=0;
 data <<= 1;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 6 * 3;
 }
 break;
 case 0x10:
 {
 NPC = (ushort)(PC+2);
-if(!N) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget & 0xFF00) != (NPC & 0xFF00)) WaitCycles++; NPC = takenTarget; };
+if(!N) { int offset = (sbyte)Read(PC+1); ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget >> 8) != (NPC >> 8)) WaitCycles += 2*3; else WaitCycles += 3; NPC = takenTarget; };
+WaitCycles += 2 * 3;
 }
 break;
 case 0x11:
 {
 NPC = (ushort)(PC+2);
-{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(5 == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 data |= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 5 * 3;
 }
 break;
 case 0x15:
@@ -191,6 +232,7 @@ data = Read(addr);
 data |= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x16:
@@ -202,43 +244,48 @@ C = (data & 0x80)!=0;
 data <<= 1;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 6 * 3;
 }
 break;
 case 0x18:
 {
 NPC = (ushort)(PC+1);
 C = false;
+WaitCycles += 2 * 3;
 }
 break;
 case 0x19:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(4 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 data |= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x1D:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(4 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 data |= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x1E:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(7 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 C = (data & 0x80)!=0;
 data <<= 1;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 7 * 3;
 }
 break;
 case 0x20:
@@ -247,6 +294,7 @@ NPC = (ushort)(PC+3);
 addr = ReadWord(PC+1);
 PushWord((ushort)(NPC-1));
 NPC = addr;
+WaitCycles += 6 * 3;
 }
 break;
 case 0x21:
@@ -257,6 +305,7 @@ data = Read(addr);
 data &= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 6 * 3;
 }
 break;
 case 0x24:
@@ -268,6 +317,7 @@ data = Read(addr);
 N = (data & 0x80)!=0;
 V = (data & 0x40)!=0;
 Z = (A & data) == 0;
+WaitCycles += 3 * 3;
 }
 break;
 case 0x25:
@@ -278,6 +328,7 @@ data = Read(addr);
 data &= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 3 * 3;
 }
 break;
 case 0x26:
@@ -291,6 +342,7 @@ data <<= 1;
 if(oldC) data |= 1;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 5 * 3;
 }
 break;
 case 0x28:
@@ -298,6 +350,7 @@ case 0x28:
 NPC = (ushort)(PC+1);
 Nes.ActiveNes.RecordEvent("Cpu.Instr.PLP");
 PullStatus();
+WaitCycles += 4 * 3;
 }
 break;
 case 0x29:
@@ -307,6 +360,7 @@ data = Read(PC+1);
 data &= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0x2A:
@@ -319,6 +373,7 @@ data <<= 1;
 if(oldC) data |= 1;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0x2C:
@@ -330,6 +385,7 @@ data = Read(addr);
 N = (data & 0x80)!=0;
 V = (data & 0x40)!=0;
 Z = (A & data) == 0;
+WaitCycles += 4 * 3;
 }
 break;
 case 0x2D:
@@ -340,6 +396,7 @@ data = Read(addr);
 data &= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x2E:
@@ -353,22 +410,25 @@ data <<= 1;
 if(oldC) data |= 1;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 6 * 3;
 }
 break;
 case 0x30:
 {
 NPC = (ushort)(PC+2);
-if(N) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget & 0xFF00) != (NPC & 0xFF00)) WaitCycles++; NPC = takenTarget; };
+if(N) { int offset = (sbyte)Read(PC+1); ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget >> 8) != (NPC >> 8)) WaitCycles += 2*3; else WaitCycles += 3; NPC = takenTarget; };
+WaitCycles += 2 * 3;
 }
 break;
 case 0x31:
 {
 NPC = (ushort)(PC+2);
-{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(5 == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 data &= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 5 * 3;
 }
 break;
 case 0x35:
@@ -379,6 +439,7 @@ data = Read(addr);
 data &= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x36:
@@ -392,38 +453,42 @@ data <<= 1;
 if(oldC) data |= 1;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 6 * 3;
 }
 break;
 case 0x38:
 {
 NPC = (ushort)(PC+1);
 C = true;
+WaitCycles += 2 * 3;
 }
 break;
 case 0x39:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(4 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 data &= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x3D:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(4 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 data &= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x3E:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(7 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 bool oldC = C;
 C = (data & 0x80)!=0;
@@ -431,6 +496,7 @@ data <<= 1;
 if(oldC) data |= 1;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 7 * 3;
 }
 break;
 case 0x40:
@@ -439,7 +505,7 @@ NPC = (ushort)(PC+1);
 Nes.ActiveNes.RecordEvent("Cpu.Instr.RTI");
 PullStatus();
 NPC = PullWord();
-Console.WriteLine("Return from NMI to ${0:X4}", NPC);
+WaitCycles += 6 * 3;
 }
 break;
 case 0x41:
@@ -450,6 +516,7 @@ data = Read(addr);
 data ^= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 6 * 3;
 }
 break;
 case 0x45:
@@ -460,6 +527,7 @@ data = Read(addr);
 data ^= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 3 * 3;
 }
 break;
 case 0x46:
@@ -471,12 +539,14 @@ C = (data & 0x01)!=0;
 data >>= 1;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 5 * 3;
 }
 break;
 case 0x48:
 {
 NPC = (ushort)(PC+1);
 Push(A);
+WaitCycles += 3 * 3;
 }
 break;
 case 0x49:
@@ -486,6 +556,7 @@ data = Read(PC+1);
 data ^= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0x4A:
@@ -496,6 +567,7 @@ C = (data & 0x01)!=0;
 data >>= 1;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0x4C:
@@ -503,6 +575,7 @@ case 0x4C:
 NPC = (ushort)(PC+3);
 addr = ReadWord(PC+1);
 NPC = addr;
+WaitCycles += 3 * 3;
 }
 break;
 case 0x4D:
@@ -513,6 +586,7 @@ data = Read(addr);
 data ^= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x4E:
@@ -524,22 +598,25 @@ C = (data & 0x01)!=0;
 data >>= 1;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 6 * 3;
 }
 break;
 case 0x50:
 {
 NPC = (ushort)(PC+2);
-if(!V) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget & 0xFF00) != (NPC & 0xFF00)) WaitCycles++; NPC = takenTarget; };
+if(!V) { int offset = (sbyte)Read(PC+1); ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget >> 8) != (NPC >> 8)) WaitCycles += 2*3; else WaitCycles += 3; NPC = takenTarget; };
+WaitCycles += 2 * 3;
 }
 break;
 case 0x51:
 {
 NPC = (ushort)(PC+2);
-{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(5 == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 data ^= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 5 * 3;
 }
 break;
 case 0x55:
@@ -550,6 +627,7 @@ data = Read(addr);
 data ^= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x56:
@@ -561,6 +639,7 @@ C = (data & 0x01)!=0;
 data >>= 1;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 6 * 3;
 }
 break;
 case 0x58:
@@ -568,43 +647,48 @@ case 0x58:
 NPC = (ushort)(PC+1);
 Nes.ActiveNes.RecordEvent("Cpu.Instr.CLI");
 I = false;
+WaitCycles += 2 * 3;
 }
 break;
 case 0x59:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(4 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 data ^= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x5D:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(4 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 data ^= A;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x5E:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(7 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 C = (data & 0x01)!=0;
 data >>= 1;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 7 * 3;
 }
 break;
 case 0x60:
 {
 NPC = (ushort)(PC+1);
 NPC = (ushort)(PullWord()+1);
+WaitCycles += 6 * 3;
 }
 break;
 case 0x61:
@@ -617,6 +701,7 @@ C = (result & 0xFF00) != 0;
 V = ( (~(A ^ data) & (A ^ (byte)result)) &0x80) != 0;
 data = A = (byte)result;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 6 * 3;
 }
 break;
 case 0x65:
@@ -629,6 +714,7 @@ C = (result & 0xFF00) != 0;
 V = ( (~(A ^ data) & (A ^ (byte)result)) &0x80) != 0;
 data = A = (byte)result;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 3 * 3;
 }
 break;
 case 0x66:
@@ -642,6 +728,7 @@ data >>= 1;
 if(oldC) data |= 0x80;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 5 * 3;
 }
 break;
 case 0x68:
@@ -650,6 +737,7 @@ NPC = (ushort)(PC+1);
 data = Pull();
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x69:
@@ -661,6 +749,7 @@ C = (result & 0xFF00) != 0;
 V = ( (~(A ^ data) & (A ^ (byte)result)) &0x80) != 0;
 data = A = (byte)result;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0x6A:
@@ -673,6 +762,7 @@ data >>= 1;
 if(oldC) data |= 0x80;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0x6C:
@@ -680,6 +770,7 @@ case 0x6C:
 NPC = (ushort)(PC+3);
 { ushort addr1 = ReadWord(PC+1); byte addr2_lo = Read(addr1); addr1 = (ushort)((addr1 & 0xFF00) | ((addr1+1)&0xFF)); byte addr2_hi = Read(addr1); addr = (ushort)(addr2_lo | (addr2_hi<<8)); }
 NPC = addr;
+WaitCycles += 5 * 3;
 }
 break;
 case 0x6D:
@@ -692,6 +783,7 @@ C = (result & 0xFF00) != 0;
 V = ( (~(A ^ data) & (A ^ (byte)result)) &0x80) != 0;
 data = A = (byte)result;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x6E:
@@ -705,24 +797,27 @@ data >>= 1;
 if(oldC) data |= 0x80;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 6 * 3;
 }
 break;
 case 0x70:
 {
 NPC = (ushort)(PC+2);
-if(V) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget & 0xFF00) != (NPC & 0xFF00)) WaitCycles++; NPC = takenTarget; };
+if(V) { int offset = (sbyte)Read(PC+1); ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget >> 8) != (NPC >> 8)) WaitCycles += 2*3; else WaitCycles += 3; NPC = takenTarget; };
+WaitCycles += 2 * 3;
 }
 break;
 case 0x71:
 {
 NPC = (ushort)(PC+2);
-{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(5 == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 int result = A + data + (C?1:0);
 C = (result & 0xFF00) != 0;
 V = ( (~(A ^ data) & (A ^ (byte)result)) &0x80) != 0;
 data = A = (byte)result;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 5 * 3;
 }
 break;
 case 0x75:
@@ -735,6 +830,7 @@ C = (result & 0xFF00) != 0;
 V = ( (~(A ^ data) & (A ^ (byte)result)) &0x80) != 0;
 data = A = (byte)result;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x76:
@@ -748,6 +844,7 @@ data >>= 1;
 if(oldC) data |= 0x80;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 6 * 3;
 }
 break;
 case 0x78:
@@ -755,36 +852,39 @@ case 0x78:
 NPC = (ushort)(PC+1);
 Nes.ActiveNes.RecordEvent("Cpu.Instr.SEI");
 I = true;
+WaitCycles += 2 * 3;
 }
 break;
 case 0x79:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(4 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 int result = A + data + (C?1:0);
 C = (result & 0xFF00) != 0;
 V = ( (~(A ^ data) & (A ^ (byte)result)) &0x80) != 0;
 data = A = (byte)result;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x7D:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(4 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 int result = A + data + (C?1:0);
 C = (result & 0xFF00) != 0;
 V = ( (~(A ^ data) & (A ^ (byte)result)) &0x80) != 0;
 data = A = (byte)result;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x7E:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(7 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 bool oldC = C;
 C = (data & 0x01)!=0;
@@ -792,6 +892,7 @@ data >>= 1;
 if(oldC) data |= 0x80;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 7 * 3;
 }
 break;
 case 0x81:
@@ -800,6 +901,7 @@ NPC = (ushort)(PC+2);
 addr = ReadWordZP((ushort)(Read(PC+1)+X));
 data = A;
 Write(addr, data);
+WaitCycles += 6 * 3;
 }
 break;
 case 0x84:
@@ -808,6 +910,7 @@ NPC = (ushort)(PC+2);
 addr = Read(PC+1);
 data = Y;
 Write(addr, data);
+WaitCycles += 3 * 3;
 }
 break;
 case 0x85:
@@ -816,6 +919,7 @@ NPC = (ushort)(PC+2);
 addr = Read(PC+1);
 data = A;
 Write(addr, data);
+WaitCycles += 3 * 3;
 }
 break;
 case 0x86:
@@ -824,6 +928,7 @@ NPC = (ushort)(PC+2);
 addr = Read(PC+1);
 data = X;
 Write(addr, data);
+WaitCycles += 3 * 3;
 }
 break;
 case 0x88:
@@ -832,6 +937,7 @@ NPC = (ushort)(PC+1);
 Y--;
 data = Y;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0x8A:
@@ -840,6 +946,7 @@ NPC = (ushort)(PC+1);
 data = X;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0x8C:
@@ -848,6 +955,7 @@ NPC = (ushort)(PC+3);
 addr = ReadWord(PC+1);
 data = Y;
 Write(addr, data);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x8D:
@@ -856,6 +964,7 @@ NPC = (ushort)(PC+3);
 addr = ReadWord(PC+1);
 data = A;
 Write(addr, data);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x8E:
@@ -864,20 +973,23 @@ NPC = (ushort)(PC+3);
 addr = ReadWord(PC+1);
 data = X;
 Write(addr, data);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x90:
 {
 NPC = (ushort)(PC+2);
-if(!C) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget & 0xFF00) != (NPC & 0xFF00)) WaitCycles++; NPC = takenTarget; };
+if(!C) { int offset = (sbyte)Read(PC+1); ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget >> 8) != (NPC >> 8)) WaitCycles += 2*3; else WaitCycles += 3; NPC = takenTarget; };
+WaitCycles += 2 * 3;
 }
 break;
 case 0x91:
 {
 NPC = (ushort)(PC+2);
-{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(6 == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = A;
 Write(addr, data);
+WaitCycles += 6 * 3;
 }
 break;
 case 0x94:
@@ -886,6 +998,7 @@ NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+X)&0xFF);
 data = Y;
 Write(addr, data);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x95:
@@ -894,6 +1007,7 @@ NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+X)&0xFF);
 data = A;
 Write(addr, data);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x96:
@@ -902,6 +1016,7 @@ NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+Y)&0xFF);
 data = X;
 Write(addr, data);
+WaitCycles += 4 * 3;
 }
 break;
 case 0x98:
@@ -910,28 +1025,32 @@ NPC = (ushort)(PC+1);
 data = Y;
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0x99:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(5 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = A;
 Write(addr, data);
+WaitCycles += 5 * 3;
 }
 break;
 case 0x9A:
 {
 NPC = (ushort)(PC+1);
 SP = X;
+WaitCycles += 2 * 3;
 }
 break;
 case 0x9D:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(5 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = A;
 Write(addr, data);
+WaitCycles += 5 * 3;
 }
 break;
 case 0xA0:
@@ -940,6 +1059,7 @@ NPC = (ushort)(PC+2);
 data = Read(PC+1);
 Y = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0xA1:
@@ -947,10 +1067,9 @@ case 0xA1:
 NPC = (ushort)(PC+2);
 addr = ReadWordZP((ushort)(Read(PC+1)+X));
 data = Read(addr);
-if(opcode == 0xAD && addr == 0x2002 && (data & 0x80)!=0)
- Console.WriteLine("{0},Read $2002", Nes.ActiveNes.TotalCpuCycles);
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 6 * 3;
 }
 break;
 case 0xA2:
@@ -959,6 +1078,7 @@ NPC = (ushort)(PC+2);
 data = Read(PC+1);
 X = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0xA4:
@@ -968,6 +1088,7 @@ addr = Read(PC+1);
 data = Read(addr);
 Y = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 3 * 3;
 }
 break;
 case 0xA5:
@@ -975,10 +1096,9 @@ case 0xA5:
 NPC = (ushort)(PC+2);
 addr = Read(PC+1);
 data = Read(addr);
-if(opcode == 0xAD && addr == 0x2002 && (data & 0x80)!=0)
- Console.WriteLine("{0},Read $2002", Nes.ActiveNes.TotalCpuCycles);
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 3 * 3;
 }
 break;
 case 0xA6:
@@ -988,6 +1108,7 @@ addr = Read(PC+1);
 data = Read(addr);
 X = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 3 * 3;
 }
 break;
 case 0xA8:
@@ -996,16 +1117,16 @@ NPC = (ushort)(PC+1);
 data = A;
 Y = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0xA9:
 {
 NPC = (ushort)(PC+2);
 data = Read(PC+1);
-//if(opcode == 0xAD && addr == 0x2002 && (data & 0x80)!=0)
- //Console.WriteLine("{0},Read $2002", Nes.ActiveNes.TotalCpuCycles);
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0xAA:
@@ -1014,6 +1135,7 @@ NPC = (ushort)(PC+1);
 data = A;
 X = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0xAC:
@@ -1023,6 +1145,7 @@ addr = ReadWord(PC+1);
 data = Read(addr);
 Y = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0xAD:
@@ -1030,10 +1153,9 @@ case 0xAD:
 NPC = (ushort)(PC+3);
 addr = ReadWord(PC+1);
 data = Read(addr);
-if(opcode == 0xAD && addr == 0x2002 && (data & 0x80)!=0)
- Console.WriteLine("{0},Read $2002", Nes.ActiveNes.TotalCpuCycles);
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0xAE:
@@ -1043,23 +1165,24 @@ addr = ReadWord(PC+1);
 data = Read(addr);
 X = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0xB0:
 {
 NPC = (ushort)(PC+2);
-if(C) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget & 0xFF00) != (NPC & 0xFF00)) WaitCycles++; NPC = takenTarget; };
+if(C) { int offset = (sbyte)Read(PC+1); ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget >> 8) != (NPC >> 8)) WaitCycles += 2*3; else WaitCycles += 3; NPC = takenTarget; };
+WaitCycles += 2 * 3;
 }
 break;
 case 0xB1:
 {
 NPC = (ushort)(PC+2);
-{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(5 == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
-if(opcode == 0xAD && addr == 0x2002 && (data & 0x80)!=0)
- Console.WriteLine("{0},Read $2002", Nes.ActiveNes.TotalCpuCycles);
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 5 * 3;
 }
 break;
 case 0xB4:
@@ -1069,6 +1192,7 @@ addr = (ushort)((Read(PC+1)+X)&0xFF);
 data = Read(addr);
 Y = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0xB5:
@@ -1076,10 +1200,9 @@ case 0xB5:
 NPC = (ushort)(PC+2);
 addr = (ushort)((Read(PC+1)+X)&0xFF);
 data = Read(addr);
-if(opcode == 0xAD && addr == 0x2002 && (data & 0x80)!=0)
- Console.WriteLine("{0},Read $2002", Nes.ActiveNes.TotalCpuCycles);
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0xB6:
@@ -1089,23 +1212,24 @@ addr = (ushort)((Read(PC+1)+Y)&0xFF);
 data = Read(addr);
 X = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0xB8:
 {
 NPC = (ushort)(PC+1);
 V = false;
+WaitCycles += 2 * 3;
 }
 break;
 case 0xB9:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(4 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
-if(opcode == 0xAD && addr == 0x2002 && (data & 0x80)!=0)
- Console.WriteLine("{0},Read $2002", Nes.ActiveNes.TotalCpuCycles);
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0xBA:
@@ -1114,35 +1238,37 @@ NPC = (ushort)(PC+1);
 data = SP;
 X = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0xBC:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(4 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 Y = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0xBD:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(4 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
-if(opcode == 0xAD && addr == 0x2002 && (data & 0x80)!=0)
- Console.WriteLine("{0},Read $2002", Nes.ActiveNes.TotalCpuCycles);
 A = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0xBE:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(4 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 X = data;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0xC0:
@@ -1152,6 +1278,7 @@ data = Read(PC+1);
 C = Y >= data;
 data = (byte)(Y - data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0xC1:
@@ -1162,6 +1289,7 @@ data = Read(addr);
 C = A >= data;
 data = (byte)(A - data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 6 * 3;
 }
 break;
 case 0xC4:
@@ -1172,6 +1300,7 @@ data = Read(addr);
 C = Y >= data;
 data = (byte)(Y - data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 3 * 3;
 }
 break;
 case 0xC5:
@@ -1182,6 +1311,7 @@ data = Read(addr);
 C = A >= data;
 data = (byte)(A - data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 3 * 3;
 }
 break;
 case 0xC6:
@@ -1192,6 +1322,7 @@ data = Read(addr);
 --data;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 5 * 3;
 }
 break;
 case 0xC8:
@@ -1200,6 +1331,7 @@ NPC = (ushort)(PC+1);
 Y++;
 data = Y;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0xC9:
@@ -1209,6 +1341,7 @@ data = Read(PC+1);
 C = A >= data;
 data = (byte)(A - data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0xCA:
@@ -1217,6 +1350,7 @@ NPC = (ushort)(PC+1);
 X--;
 data = X;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0xCC:
@@ -1227,6 +1361,7 @@ data = Read(addr);
 C = Y >= data;
 data = (byte)(Y - data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0xCD:
@@ -1237,6 +1372,7 @@ data = Read(addr);
 C = A >= data;
 data = (byte)(A - data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0xCE:
@@ -1247,22 +1383,25 @@ data = Read(addr);
 --data;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 6 * 3;
 }
 break;
 case 0xD0:
 {
 NPC = (ushort)(PC+2);
-if(!Z) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget & 0xFF00) != (NPC & 0xFF00)) WaitCycles++; NPC = takenTarget; };
+if(!Z) { int offset = (sbyte)Read(PC+1); ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget >> 8) != (NPC >> 8)) WaitCycles += 2*3; else WaitCycles += 3; NPC = takenTarget; };
+WaitCycles += 2 * 3;
 }
 break;
 case 0xD1:
 {
 NPC = (ushort)(PC+2);
-{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(5 == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 C = A >= data;
 data = (byte)(A - data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 5 * 3;
 }
 break;
 case 0xD5:
@@ -1273,6 +1412,7 @@ data = Read(addr);
 C = A >= data;
 data = (byte)(A - data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0xD6:
@@ -1283,6 +1423,7 @@ data = Read(addr);
 --data;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 6 * 3;
 }
 break;
 case 0xD8:
@@ -1290,36 +1431,40 @@ case 0xD8:
 NPC = (ushort)(PC+1);
 Nes.ActiveNes.RecordEvent("Cpu.Instr.CLD");
 D=false;
+WaitCycles += 2 * 3;
 }
 break;
 case 0xD9:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(4 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 C = A >= data;
 data = (byte)(A - data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0xDD:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(4 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 C = A >= data;
 data = (byte)(A - data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0xDE:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(7 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 --data;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 7 * 3;
 }
 break;
 case 0xE0:
@@ -1329,6 +1474,7 @@ data = Read(PC+1);
 C = X >= data;
 data = (byte)(X - data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0xE1:
@@ -1341,6 +1487,7 @@ C = (result & 0xFF00) == 0;
 V = ( ((A ^ data) & (A ^ (byte)result)) &0x80) != 0;
 data = A = (byte)result;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 6 * 3;
 }
 break;
 case 0xE4:
@@ -1351,6 +1498,7 @@ data = Read(addr);
 C = X >= data;
 data = (byte)(X - data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 3 * 3;
 }
 break;
 case 0xE5:
@@ -1363,6 +1511,7 @@ C = (result & 0xFF00) == 0;
 V = ( ((A ^ data) & (A ^ (byte)result)) &0x80) != 0;
 data = A = (byte)result;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 3 * 3;
 }
 break;
 case 0xE6:
@@ -1373,6 +1522,7 @@ data = Read(addr);
 ++data;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 5 * 3;
 }
 break;
 case 0xE8:
@@ -1381,6 +1531,7 @@ NPC = (ushort)(PC+1);
 X++;
 data = X;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0xE9:
@@ -1392,11 +1543,13 @@ C = (result & 0xFF00) == 0;
 V = ( ((A ^ data) & (A ^ (byte)result)) &0x80) != 0;
 data = A = (byte)result;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 2 * 3;
 }
 break;
 case 0xEA:
 {
 NPC = (ushort)(PC+1);
+WaitCycles += 2 * 3;
 }
 break;
 case 0xEC:
@@ -1407,6 +1560,7 @@ data = Read(addr);
 C = X >= data;
 data = (byte)(X - data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0xED:
@@ -1419,6 +1573,7 @@ C = (result & 0xFF00) == 0;
 V = ( ((A ^ data) & (A ^ (byte)result)) &0x80) != 0;
 data = A = (byte)result;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0xEE:
@@ -1429,24 +1584,27 @@ data = Read(addr);
 ++data;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 6 * 3;
 }
 break;
 case 0xF0:
 {
 NPC = (ushort)(PC+2);
-if(Z) { WaitCycles++; byte lo = Read(PC+1); int offset = (lo <= 127) ? lo : lo - 256; ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget & 0xFF00) != (NPC & 0xFF00)) WaitCycles++; NPC = takenTarget; };
+if(Z) { int offset = (sbyte)Read(PC+1); ushort takenTarget = (ushort)(PC+2+offset); if((takenTarget >> 8) != (NPC >> 8)) WaitCycles += 2*3; else WaitCycles += 3; NPC = takenTarget; };
+WaitCycles += 2 * 3;
 }
 break;
 case 0xF1:
 {
 NPC = (ushort)(PC+2);
-{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWordZP(Read(PC+1)); addr = (ushort)(baseAddr+Y); if(5 == 5 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 int result = A - data - (C?0:1);
 C = (result & 0xFF00) == 0;
 V = ( ((A ^ data) & (A ^ (byte)result)) &0x80) != 0;
 data = A = (byte)result;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 5 * 3;
 }
 break;
 case 0xF5:
@@ -1459,6 +1617,7 @@ C = (result & 0xFF00) == 0;
 V = ( ((A ^ data) & (A ^ (byte)result)) &0x80) != 0;
 data = A = (byte)result;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0xF6:
@@ -1469,6 +1628,7 @@ data = Read(addr);
 ++data;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 6 * 3;
 }
 break;
 case 0xF8:
@@ -1476,40 +1636,44 @@ case 0xF8:
 NPC = (ushort)(PC+1);
 Nes.ActiveNes.RecordEvent("Cpu.Instr.SED");
 D=true;
+WaitCycles += 2 * 3;
 }
 break;
 case 0xF9:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+Y); if(4 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 int result = A - data - (C?0:1);
 C = (result & 0xFF00) == 0;
 V = ( ((A ^ data) & (A ^ (byte)result)) &0x80) != 0;
 data = A = (byte)result;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0xFD:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(4 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 int result = A - data - (C?0:1);
 C = (result & 0xFF00) == 0;
 V = ( ((A ^ data) & (A ^ (byte)result)) &0x80) != 0;
 data = A = (byte)result;
 Z = (data == 0); N = (data > 127);
+WaitCycles += 4 * 3;
 }
 break;
 case 0xFE:
 {
 NPC = (ushort)(PC+3);
-{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(Cycles[opcode] == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles++; }
+{ ushort baseAddr = ReadWord(PC+1); addr = (ushort)(baseAddr+X); if(7 == 4 && (addr & 0xFF00) != (baseAddr & 0xFF00)) WaitCycles+=3; }
 data = Read(addr);
 ++data;
 Write(addr, data);
 Z = (data == 0); N = (data > 127);
+WaitCycles += 7 * 3;
 }
 break;
 
@@ -1532,9 +1696,12 @@ break;
                         return;
                 }
 
+                // temp.
+                //this.WaitCycles *= 3;
+
             /*if(opcode == 0xa2 || opcode == 0xa6 || opcode == 0xa6)
                 Console.WriteLine("Opcode ${0:X2} Delay {1} cy", opcode, Cycles[opcode]);*/
-            WaitCycles += Cycles[opcode];
+            //WaitCycles += Cycles[opcode];
 
             /*if ((PC & 0xF000) != (NPC & 0xF000))
                 if(false) Console.WriteLine("Jumping from ${0:X2} to ${1:X2}", PC, NPC);*/
@@ -1545,7 +1712,9 @@ break;
                 Paused = true;
                 SingleStep = false;
             }*/
-            SetPC(NPC);
+            //SetPC(NPC);
+            PC = NPC;
+            //return;
             }
         }
     }

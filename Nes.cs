@@ -79,47 +79,26 @@ namespace Emu6502
             Mem.Reset();
             Ppu.Reset();
             Mapper.Reset();
+            Cpu.RAM = Mem.RAM;
             Cpu.Reset();
             sw.Start();
         }
 
-        public int Run(int ppuCyclesToRun, out bool render)
+        public int RunOneFrame()
         {
-            render = false;
+            /*if (Cpu.Paused)
+                return ppuCyclesToRun;*/
 
-            if (Cpu.Paused)
-                return ppuCyclesToRun;
-
-            while (ppuCyclesToRun > 0)
+            while (true)
             {
-                --ppuCyclesToRun;
-
-                // CPU clock is 1/3 the PPU clock
-                /*++cpuCycles;
-                if (cpuCycles == 3)
+                if (Cpu.WaitCycles <= Ppu.WaitCycles)
                 {
-                    cpuCycles = 0;*/
-
-                ++cpuDivider;
-                if(cpuDivider == 3)
-                {
-                    cpuDivider = 0;
-                    ++TotalCpuCycles;
-
-                    if (Cpu.WaitCycles > 0)
-                        Cpu.WaitCycles--;
-
-                    if (Cpu.WaitCycles == 0)
-                    {
-                        Cpu.Tick();
-                        if (Cpu.Paused)
-                            break;
-                    }
+                    Cpu.Run(Ppu.WaitCycles);
                 }
-                //}
 
+                Ppu.FrameCycle += Ppu.WaitCycles;
+                Ppu.WaitCycles = 0;
                 Ppu.Tick();
-
                 if (Ppu.VsyncSignalToMainLoop)
                 {
                     Ppu.VsyncSignalToMainLoop = false;
@@ -132,12 +111,54 @@ namespace Emu6502
                         sw.Start();
                         frameCount = 0;
                     }
-                    render = true;
-                    break;
+                    //render = true;
+                    return 0;
                 }
+
+#if false
+                //Console.WriteLine("ToRun: {0} CPU: {1} PPU: {2}", ppuCyclesToRun, Cpu.WaitCycles, Ppu.WaitCycles);
+                //int min = ppuCyclesToRun < Ppu.WaitCycles ? ppuCyclesToRun : Ppu.WaitCycles;
+                int min = Ppu.WaitCycles < Cpu.WaitCycles ? Ppu.WaitCycles : Cpu.WaitCycles;
+                //Console.WriteLine("Min={0}", min);
+
+                //TotalCpuCycles += min;
+                //TotalPpuCycles += min;
+                
+                Cpu.WaitCycles -= min;
+                Ppu.WaitCycles -= min;
+                //ppuCyclesToRun -= min;
+
+
+                if (Cpu.WaitCycles == 0)
+                    Cpu.Tick();
+                /*if (Ppu.WaitCycles < 0)
+                    throw new InvalidOperationException("FUCK");*/
+                Ppu.FrameCycle += min;
+                if (Ppu.WaitCycles == 0)
+                {
+                    Ppu.Tick();
+                    if (Ppu.VsyncSignalToMainLoop)
+                    {
+                        Ppu.VsyncSignalToMainLoop = false;
+                        ++frameCount;
+                        if (frameCount == 10)
+                        {
+                            float secs = sw.ElapsedTicks / (float)Stopwatch.Frequency;
+                            FPS = frameCount / secs;
+                            sw.Reset();
+                            sw.Start();
+                            frameCount = 0;
+                        }
+                        //render = true;
+                        return 0;
+                    }
+                }
+#endif
+
             }
 
-            return ppuCyclesToRun;
+
+            //return ppuCyclesToRun;
         }
     }
 }

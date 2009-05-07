@@ -65,6 +65,7 @@ namespace Emu6502
         [DllImport("User32.dll", CharSet = CharSet.Auto)]
         public static extern bool PeekMessage(out pkMessage msg, IntPtr hWnd, uint messageFilterMin, uint messageFilterMax, uint flags);
 
+        int counter = 0;
         
         void Application_Idle(object sender, EventArgs e)
         {
@@ -85,24 +86,26 @@ namespace Emu6502
                 nes.Controller1.Down = state.ThumbSticks.Left.Y < -deadZone;
 
                 double deltaT = (double)sw.ElapsedTicks / (double)Stopwatch.Frequency;
+                deltaT *= 5;
                 sw.Reset();
                 sw.Start();
                 if(deltaT > 0.1f)
                     deltaT = 0.1f;
                 double clockRate = 341 * 262 * 60;
-                
+
                 int cycles = (int)Math.Round(clockRate * deltaT);
                 //Console.WriteLine("{0:0} ms = {1} cycles", deltaT * 1000.0, cycles);
 
-                bool render=false;
-                while (!nes.Cpu.Paused && cycles > 0)
+                //bool render=false;
+                /*while (!nes.Cpu.Paused && cycles > 0)
                 {
                     bool tmpRender = false;
                     cycles = nes.Run(cycles, out tmpRender);
 
                     if(tmpRender)
                         render = true;
-                }
+                }*/
+                nes.RunOneFrame();
 
                 if (nes.Cpu.Paused)
                 {
@@ -112,8 +115,15 @@ namespace Emu6502
                     return;
                 }
 
-                if(render)
+                //if(render)
                     outputWindow.Invalidate();
+
+                counter++;
+                if (counter > 10)
+                {
+                    outputWindow.Text = String.Format("NES Emulator - {0:0.0} FPS", nes.FPS);
+                    counter = 0;
+                }
             }
         }
 
@@ -250,7 +260,7 @@ namespace Emu6502
 
         private void Debugger_FormClosed(object sender, FormClosedEventArgs e)
         {
-            nes.Cpu.SaveEncounteredInstructions();
+            //nes.Cpu.SaveEncounteredInstructions();
         }
 
         private void redisasm_Click(object sender, EventArgs e)

@@ -1,8 +1,6 @@
 
 LDA {{
 READ;
-if(opcode == 0xAD && addr == 0x2002 && (data & 0x80)!=0)
-	Console.WriteLine("{0},Read $2002", Nes.ActiveNes.TotalCpuCycles);
 A = data;
 SETNZ;
 }}
@@ -62,6 +60,7 @@ READ;
 N = (data & 0x80)!=0; // bit 7
 V = (data & 0x40)!=0; // bit 6
 Z = (A & data) == 0;
+
 }}
 
 CMP {{

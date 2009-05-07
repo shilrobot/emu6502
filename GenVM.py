@@ -44,6 +44,25 @@ modeSizes = {'imm':2,
 				'imp':1,
 				'rel':2}
 
+cycles = [ 
+         7,6,2,8,3,3,5,5,3,2,2,2,4,4,6,6,
+         2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
+         6,6,2,8,3,3,5,5,4,2,2,2,4,4,6,6,
+         2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
+        6,6,2,8,3,3,5,5,3,2,2,2,3,4,6,6,
+         2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
+         6,6,2,8,3,3,5,5,4,2,2,2,5,4,6,6,
+         2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
+         2,6,2,6,3,3,3,3,2,2,2,2,4,4,4,4,
+         2,6,2,6,4,4,4,4,2,5,2,5,5,5,5,5,
+         2,6,2,6,3,3,3,3,2,2,2,2,4,4,4,4,
+         2,5,2,5,4,4,4,4,2,4,2,4,4,4,4,4,
+         2,6,2,8,3,3,5,5,2,2,2,2,4,4,6,6,
+         2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
+         2,6,3,8,3,3,5,5,2,2,2,2,4,4,6,6,
+         2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
+        ]
+				
 encodings = getEncodings()
 s = ''
 for i in encodings:
@@ -58,14 +77,18 @@ for i in encodings:
 	s += '#define AGEN AGEN_%s\n' % modeHelpers[i.modename]
 	s += '#define READ READ_%s\n' % modeHelpers[i.modename]
 	s += '#define WRITE WRITE_%s\n' % modeHelpers[i.modename]
+	s += '#define CYCLES %d\n' % cycles[i.opcode]
 	s += '// %s (%s)\n' % (i.name, i.modename)
 	s += 'case 0x%02X:\n' % i.opcode
 	s += '{\n'
+	#s += 'BeginTiming();\n'
 	#s += 'Encountered("%s %s");\n' % (i.name, i.modename)
 	#s += 'Console.WriteLine("%s %s");\n' % (i.name, i.modename)
 	s += 'NPC = (ushort)(PC+%d);\n' % modeSizes[i.modename]
 	s += 'AGEN\n'
 	s += code+'\n'
+	#s += 'EndTiming("%s %s");\n'%(i.name, i.modename)
+	s += 'WaitCycles += CYCLES * 3;\n'
 	s += '}\n'
 	s += 'break;\n\n'
 print s

@@ -24,10 +24,16 @@ namespace Emu6502
         public BreakpointManager Breakpoints { get; private set; }
 
         // Status flags
-        // Note: D (BCD arithmetic flag) is not implemented by NES
+        // Note: D (BCD arithmetic flag) exists but doesn't actually do anything
         // Likewise, B is not a real flag, but rather only shows up as 1 in the saved
-        // status register on the stack after BRK causes an interrupt.
+        // status register on the stack after BRK causes an interrupt, or after PHP.
         public bool C, Z, I, V, N, D;
+
+        /*public bool N { get { return (sbyte)DeferN < 0; } set { DeferN = value ? (byte)0xFF : (byte)0; } }
+        public bool Z { get { return DeferZ == 0; } set { DeferZ = value ? (byte)0 : (byte)0xFF; } }
+
+        public byte DeferZ = 0;
+        public byte DeferN = 0;*/
 
         public byte SP; // Stack pointer
         public IMemory Mem;
@@ -37,7 +43,12 @@ namespace Emu6502
 
         private List<ushort> PCHistory = new List<ushort>();
 
-        private StreamWriter fs = new StreamWriter("my_cpu.txt");
+        public byte[] RAM;
+
+        
+
+
+        //private StreamWriter fs = new StreamWriter("my_cpu.txt");
 
         public Chip6502(IMemory mem)
         {
