@@ -95,6 +95,8 @@ namespace Emu6502
                 {
                     Cpu.Run(Ppu.WaitCycles);
                 }
+                else
+                    Cpu.WaitCycles -= Ppu.WaitCycles;
 
                 Ppu.FrameCycle += Ppu.WaitCycles;
                 Ppu.WaitCycles = 0;
