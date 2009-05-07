@@ -119,7 +119,7 @@ namespace Emu6502
             pp.PresentationInterval = PresentInterval.Default; // TODO
             pp.RenderTargetUsage = RenderTargetUsage.PreserveContents;
             pp.SwapEffect = SwapEffect.Discard;
-            pp.PresentationInterval = PresentInterval.Immediate;
+            pp.PresentationInterval = PresentInterval.One;
 
             device = new GraphicsDevice(GraphicsAdapter.DefaultAdapter,
                                            DeviceType.Hardware,

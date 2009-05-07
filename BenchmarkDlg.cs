@@ -48,10 +48,10 @@ namespace Emu6502
         {
             textBox.Clear();
 
-            /*List<double> averages = new List<double>();
+            List<double> averages = new List<double>();
 
             for (int i = 0; i < 5; ++i)
-            {*/
+            {
                 double sum = 0;
                 sum += Benchmark("Super Mario Brothers", @"p:\csharp\emu6502\roms\Super Mario Bros. (JU) (PRG0) [!].nes");
                 sum += Benchmark("Mega Man 2", @"p:\csharp\emu6502\roms\Mega Man 2 (U).nes");
@@ -62,7 +62,7 @@ namespace Emu6502
                 textBox.AppendText(String.Format("Speed: {0:0.000}X\r\n", 10.0 / avg));
                 Refresh();
 
-           /*     averages.Add(avg);
+                averages.Add(avg);
             }
             
             
@@ -70,7 +70,7 @@ namespace Emu6502
             textBox.AppendText(String.Format("Total Avg: {0:0.000} s\r\n", averages.Sum() / averages.Count));
             textBox.AppendText(String.Format("Std Dev: {0:0.000} s\r\n", StdDev(averages)));
 
-                Chip6502.SaveTimings();*/
+                Chip6502.SaveTimings();
         }
     }
 }
