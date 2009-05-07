@@ -1698,6 +1698,7 @@ break;
 
                 // temp.
                 //this.WaitCycles *= 3;
+                Console.WriteLine("Executed instr taking {0} cycles", this.WaitCycles);
 
             /*if(opcode == 0xa2 || opcode == 0xa6 || opcode == 0xa6)
                 Console.WriteLine("Opcode ${0:X2} Delay {1} cy", opcode, Cycles[opcode]);*/

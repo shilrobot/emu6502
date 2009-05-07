@@ -86,7 +86,7 @@ namespace Emu6502
             I = true;
             SetPC(ReadWord(NMIAddr));
             //Console.WriteLine("6502 NMI -> Jump to ${0:X4}", PC);
-            WaitCycles += 7; // Interrupt latency
+            WaitCycles += 7*3; // Interrupt latency
             Nes.ActiveNes.RecordEvent("Cpu.Int.NMI");
         }
 

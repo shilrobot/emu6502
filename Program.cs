@@ -19,9 +19,9 @@ namespace Emu6502
             //Application.Run(new Form1());
             //Application.Run(new Debugger());
 
-            BenchmarkDlg bdlg = new BenchmarkDlg();
+            /*BenchmarkDlg bdlg = new BenchmarkDlg();
             bdlg.ShowDialog();
-            return;
+            return;*/
 
             /*Rom r = new Rom("Roms/Mega Man 2 (U).nes");
             Rom r2 = new Rom("Roms/Castlevania (E).nes");*/

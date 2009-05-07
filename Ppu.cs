@@ -71,7 +71,7 @@ namespace Emu6502
         private int[] BGBuffer = new int[ScreenWidth];
 
         private const int Cycle_Start = 0;
-        private const int Cycle_RaiseNMI = 3;
+        private const int Cycle_RaiseNMI = 50;
         private const int Cycle_ClearVSync = 2270 * 3;
         //private const int Cycle_SkipFrame = (19 * 341) + 328;
         private const int Cycle_FirstVisibleScanline = (20 * 341);
@@ -1007,15 +1007,16 @@ namespace Emu6502
         public void Tick()
         {
             FrameCycle = FrameCycle % (262 * 341);
-            //Console.WriteLine("FrameCycle={0}", FrameCycle);
 
             if (FrameCycle >= Cycle_FirstVisibleScanline && FrameCycle % 341 == 0)
             {
+                Console.WriteLine("#{0} Scanline", FrameCycle);
                 BeginScanline();
                 WaitCycles = 341;
             }
             else if (FrameCycle == Cycle_Start)
             {
+                Console.WriteLine("#{0} Start", FrameCycle);
                 ScanlineIndex = 0;
                 //VsyncFlag = true;
                 Vsync();
@@ -1023,13 +1024,15 @@ namespace Emu6502
             }
             else if (FrameCycle == Cycle_RaiseNMI)
             {
-                Console.WriteLine("VSYNC");
+                Console.WriteLine("#{0} Raise NMI", FrameCycle);
+                //Console.WriteLine("VSYNC");
                 //Vsync();
                 RaiseVsyncNmi();
                 WaitCycles = Cycle_ClearVSync - Cycle_RaiseNMI;
             }
             else if (FrameCycle == Cycle_ClearVSync)
             {
+                Console.WriteLine("#{0} Clear VSync", FrameCycle);
                 VsyncFlag = false;
                 cycleSkipToggle = !cycleSkipToggle;
                 WaitCycles = Cycle_FirstVisibleScanline - Cycle_ClearVSync;
